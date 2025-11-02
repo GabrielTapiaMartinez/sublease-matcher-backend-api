@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sublease-matcher-api"
+version = "0.1.0"
+description = "FastAPI adapters and HTTP layer for Sublease Matcher"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.120",
+  "uvicorn[standard]>=0.38",
+  "pydantic>=2.12",
+  "pydantic-settings>=2.11",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["sublease_matcher*"]
