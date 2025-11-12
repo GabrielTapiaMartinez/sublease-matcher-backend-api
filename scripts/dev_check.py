@@ -4,7 +4,6 @@ import importlib
 import pkgutil
 import sys
 
-
 print("Python:", sys.version)
 print("sys.path[0]:", sys.path[0])
 has_pkg = any(m.name == "sublease_matcher" for m in pkgutil.iter_modules())

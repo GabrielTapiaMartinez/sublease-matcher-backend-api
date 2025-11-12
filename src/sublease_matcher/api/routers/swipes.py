@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, List, Literal, Optional, cast
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict
@@ -43,21 +43,21 @@ class SwipeIn(BaseModel):
 
 class ListingQueueItem(BaseModel):
     id: str
-    title: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    pricePerMonth: Optional[Decimal] = None
-    status: Optional[Literal["DRAFT", "PUBLISHED", "UNLISTED"]] = None
+    title: str | None = None
+    city: str | None = None
+    state: str | None = None
+    pricePerMonth: Decimal | None = None
+    status: Literal["DRAFT", "PUBLISHED", "UNLISTED"] | None = None
 
 
 class SeekerQueueItem(BaseModel):
     id: str
-    bio: Optional[str] = None
-    term: Optional[str] = None
-    termYear: Optional[int] = None
-    budgetMin: Optional[Decimal] = None
-    budgetMax: Optional[Decimal] = None
-    city: Optional[str] = None
+    bio: str | None = None
+    term: str | None = None
+    termYear: int | None = None
+    budgetMin: Decimal | None = None
+    budgetMax: Decimal | None = None
+    city: str | None = None
 
 
 class SwipeOut(BaseModel):
@@ -69,7 +69,7 @@ class SwipeOut(BaseModel):
 
 
 class UndoResponse(BaseModel):
-    restored: Optional[SwipeOut] = None
+    restored: SwipeOut | None = None
 
 
 class MatchOut(BaseModel):
@@ -77,12 +77,12 @@ class MatchOut(BaseModel):
     seeker_id: str
     listing_id: str
     status: Literal["PENDING", "MUTUAL"]
-    score: Optional[float] = None
-    matched_at: Optional[datetime] = None
+    score: float | None = None
+    matched_at: datetime | None = None
 
 
 def _has_like(swipes: InMemorySwipeRepo, *, user_id: str, target_id: str) -> bool:
-    store: Dict[str, SwipeDict] = swipes._data
+    store: dict[str, SwipeDict] = swipes._data
     return any(
         swipe.get("user_id") == user_id
         and swipe.get("target_id") == target_id
@@ -115,7 +115,7 @@ def _to_seeker_queue_item(seeker: SeekerDict) -> SeekerQueueItem:
 
 
 def _to_swipe_out(swipe: SwipeDict) -> SwipeOut:
-    decision = cast(Literal["like", "pass"], swipe["decision"])
+    decision: Literal["like", "pass"] = swipe["decision"]
     return SwipeOut(
         id=swipe["id"],
         user_id=swipe["user_id"],
@@ -126,7 +126,7 @@ def _to_swipe_out(swipe: SwipeDict) -> SwipeOut:
 
 
 def _to_match_out(match: MatchDict) -> MatchOut:
-    status = cast(Literal["PENDING", "MUTUAL"], match["status"])
+    status: Literal["PENDING", "MUTUAL"] = match["status"]
     return MatchOut(
         id=match["id"],
         seeker_id=match["seeker_id"],
@@ -137,11 +137,11 @@ def _to_match_out(match: MatchDict) -> MatchOut:
     )
 
 
-@router.get("/queue/seeker", response_model=List[ListingQueueItem])
+@router.get("/queue/seeker", response_model=list[ListingQueueItem])
 def seeker_queue(
     uow: InMemoryUnitOfWork = Depends(get_uow),
     user_id: str = Depends(get_user_id),
-) -> List[ListingQueueItem]:
+) -> list[ListingQueueItem]:
     seeker = uow.seekers.get_by_user(user_id)
     if seeker is None or not seeker.get("id"):
         raise NotFoundError("Seeker profile not found")
@@ -149,11 +149,11 @@ def seeker_queue(
     return [_to_listing_queue_item(item) for item in listing_queue]
 
 
-@router.get("/queue/host", response_model=List[SeekerQueueItem])
+@router.get("/queue/host", response_model=list[SeekerQueueItem])
 def host_queue(
     user_id: str = Depends(get_host_user_id),
     uow: InMemoryUnitOfWork = Depends(get_uow),
-) -> List[SeekerQueueItem]:
+) -> list[SeekerQueueItem]:
     host = uow.hosts.get_by_user(user_id)
     if host is None or not host.get("id"):
         raise NotFoundError("Host profile not found")
@@ -242,9 +242,9 @@ def undo_swipe(
     return UndoResponse(restored=_to_swipe_out(restored) if restored else None)
 
 
-def _compute_matches(request: Request, uow: InMemoryUnitOfWork) -> List[MatchOut]:
+def _compute_matches(request: Request, uow: InMemoryUnitOfWork) -> list[MatchOut]:
     header_user = request.headers.get("X-Debug-User-Id")
-    candidate_users: List[str] = []
+    candidate_users: list[str] = []
     if header_user:
         candidate_users.append(header_user)
     else:
@@ -261,24 +261,22 @@ def _compute_matches(request: Request, uow: InMemoryUnitOfWork) -> List[MatchOut
             listing = uow.listings.get_by_host(host["id"])
             matches = uow.matches.list_for_host(host["id"])
             if listing and listing.get("id"):
-                matches = [
-                    match for match in matches if match.get("listing_id") == listing["id"]
-                ]
+                matches = [match for match in matches if match.get("listing_id") == listing["id"]]
             return [_to_match_out(match) for match in matches]
     raise NotFoundError("No seeker or host context found for user")
 
 
-@router.get("/matches/me", response_model=List[MatchOut])
+@router.get("/matches/me", response_model=list[MatchOut])
 def my_matches(
     request: Request,
     uow: InMemoryUnitOfWork = Depends(get_uow),
-) -> List[MatchOut]:
+) -> list[MatchOut]:
     return _compute_matches(request, uow)
 
 
-@public_router.get("/matches", response_model=List[MatchOut])
+@public_router.get("/matches", response_model=list[MatchOut])
 def matches_alias(
     request: Request,
     uow: InMemoryUnitOfWork = Depends(get_uow),
-) -> List[MatchOut]:
+) -> list[MatchOut]:
     return _compute_matches(request, uow)

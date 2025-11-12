@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from decimal import Decimal
-from typing import Protocol, Sequence
+from typing import Literal, Protocol
 
 from .types import HostDict, ListingDict, MatchDict, SeekerDict, SwipeDict
 
@@ -55,6 +56,6 @@ class MatchRepo(Protocol):
         self,
         seeker_id: str,
         listing_id: str,
-        status: str,
+        status: Literal["PENDING", "MUTUAL"],
         score: float | None,
     ) -> MatchDict: ...

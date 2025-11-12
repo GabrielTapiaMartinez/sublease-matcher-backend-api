@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, List, Sequence
+from typing import Literal
 from uuid import uuid4
 
 from ..interfaces.repos import (
@@ -16,8 +17,8 @@ from ..interfaces.types import HostDict, ListingDict, MatchDict, SeekerDict, Swi
 
 
 class InMemorySeekerRepo(SeekerRepo):
-    def __init__(self, data: Dict[str, SeekerDict] | None = None) -> None:
-        self._data: Dict[str, SeekerDict] = data or {}
+    def __init__(self, data: dict[str, SeekerDict] | None = None) -> None:
+        self._data: dict[str, SeekerDict] = data or {}
 
     def get(self, seeker_id: str) -> SeekerDict | None:
         return self._data.get(seeker_id)
@@ -39,8 +40,8 @@ class InMemorySeekerRepo(SeekerRepo):
 
 
 class InMemoryHostRepo(HostRepo):
-    def __init__(self, data: Dict[str, HostDict] | None = None) -> None:
-        self._data: Dict[str, HostDict] = data or {}
+    def __init__(self, data: dict[str, HostDict] | None = None) -> None:
+        self._data: dict[str, HostDict] = data or {}
 
     def get(self, host_id: str) -> HostDict | None:
         return self._data.get(host_id)
@@ -59,8 +60,8 @@ class InMemoryHostRepo(HostRepo):
 
 
 class InMemoryListingRepo(ListingRepo):
-    def __init__(self, data: Dict[str, ListingDict] | None = None) -> None:
-        self._data: Dict[str, ListingDict] = data or {}
+    def __init__(self, data: dict[str, ListingDict] | None = None) -> None:
+        self._data: dict[str, ListingDict] = data or {}
 
     def get(self, listing_id: str) -> ListingDict | None:
         return self._data.get(listing_id)
@@ -82,32 +83,30 @@ class InMemoryListingRepo(ListingRepo):
         city: str | None = None,
         max_price: Decimal | None = None,
     ) -> Sequence[ListingDict]:
-        results: List[ListingDict] = list(self._data.values())
+        results: list[ListingDict] = list(self._data.values())
         if city:
             results = [listing for listing in results if listing.get("city") == city]
         if max_price is not None:
-            results = [
-                listing
-                for listing in results
-                if listing.get("price_per_month") is not None
-                and listing["price_per_month"] <= max_price
-            ]
+            filtered: list[ListingDict] = []
+            for listing in results:
+                price = listing.get("price_per_month")
+                if price is not None and price <= max_price:
+                    filtered.append(listing)
+            results = filtered
         return results
 
     def queue_for_seeker(self, seeker_id: str) -> Sequence[ListingDict]:
-        return [
-            listing for listing in self._data.values() if listing.get("status") == "PUBLISHED"
-        ]
+        return [listing for listing in self._data.values() if listing.get("status") == "PUBLISHED"]
 
 
 class InMemorySwipeRepo(SwipeRepo):
     def __init__(
         self,
-        data: Dict[str, SwipeDict] | None = None,
-        by_user_stack: Dict[str, List[SwipeDict]] | None = None,
+        data: dict[str, SwipeDict] | None = None,
+        by_user_stack: dict[str, list[SwipeDict]] | None = None,
     ) -> None:
-        self._data: Dict[str, SwipeDict] = data or {}
-        self._by_user_stack: Dict[str, List[SwipeDict]] = by_user_stack or {}
+        self._data: dict[str, SwipeDict] = data or {}
+        self._by_user_stack: dict[str, list[SwipeDict]] = by_user_stack or {}
 
     def record_swipe(self, swiper_id: str, target_id: str, decision: str) -> SwipeDict:
         swipe: SwipeDict = {
@@ -131,8 +130,8 @@ class InMemorySwipeRepo(SwipeRepo):
 
 
 class InMemoryMatchRepo(MatchRepo):
-    def __init__(self, data: Dict[str, MatchDict] | None = None) -> None:
-        self._data: Dict[str, MatchDict] = data or {}
+    def __init__(self, data: dict[str, MatchDict] | None = None) -> None:
+        self._data: dict[str, MatchDict] = data or {}
 
     def list_for_seeker(self, seeker_id: str) -> Sequence[MatchDict]:
         return [match for match in self._data.values() if match.get("seeker_id") == seeker_id]
@@ -144,7 +143,7 @@ class InMemoryMatchRepo(MatchRepo):
         self,
         seeker_id: str,
         listing_id: str,
-        status: str,
+        status: Literal["PENDING", "MUTUAL"],
         score: float | None,
     ) -> MatchDict:
         key = f"{seeker_id}:{listing_id}"

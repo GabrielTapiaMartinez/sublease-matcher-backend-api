@@ -1,25 +1,20 @@
 from __future__ import annotations
 
+from types import TracebackType
 from typing import Self
 
+from ..interfaces.repos import HostRepo, ListingRepo, MatchRepo, SeekerRepo, SwipeRepo
 from ..interfaces.uow import UnitOfWork
-from .memory_repos import (
-    InMemoryHostRepo,
-    InMemoryListingRepo,
-    InMemoryMatchRepo,
-    InMemorySeekerRepo,
-    InMemorySwipeRepo,
-)
 
 
 class InMemoryUnitOfWork(UnitOfWork):
     def __init__(
         self,
-        seekers: InMemorySeekerRepo,
-        hosts: InMemoryHostRepo,
-        listings: InMemoryListingRepo,
-        swipes: InMemorySwipeRepo,
-        matches: InMemoryMatchRepo,
+        seekers: SeekerRepo,
+        hosts: HostRepo,
+        listings: ListingRepo,
+        swipes: SwipeRepo,
+        matches: MatchRepo,
     ) -> None:
         self.seekers = seekers
         self.hosts = hosts
@@ -32,7 +27,12 @@ class InMemoryUnitOfWork(UnitOfWork):
         self._committed = False
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
         if exc:
             self.rollback()
         else:

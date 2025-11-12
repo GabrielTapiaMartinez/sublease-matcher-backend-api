@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import TracebackType
 from typing import Protocol, Self
 
 from .repos import HostRepo, ListingRepo, MatchRepo, SeekerRepo, SwipeRepo
@@ -14,7 +15,12 @@ class UnitOfWork(Protocol):
 
     def __enter__(self) -> Self: ...
 
-    def __exit__(self, exc_type, exc, tb) -> None: ...
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None: ...
 
     def commit(self) -> None: ...
 

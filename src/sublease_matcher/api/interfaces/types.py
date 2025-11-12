@@ -16,6 +16,7 @@ class SeekerDict(TypedDict, total=False):
     city: str
     interests_csv: str
     contact_email: str
+    hidden: bool
 
 
 class HostDict(TypedDict, total=False):
@@ -26,16 +27,28 @@ class HostDict(TypedDict, total=False):
     contact_email: str
 
 
+class RoommateDict(TypedDict, total=False):
+    id: str
+    name: str
+    pronouns: str
+    sleepingHabits: str
+    studyHabits: str
+    cleanliness: str
+    interests: list[str]
+    bio: str
+
+
 class ListingDict(TypedDict, total=False):
     id: str
     host_id: str
     title: str
-    price_per_month: Decimal
+    price_per_month: Decimal | None
     city: str
     state: str
     available_from: date
     available_to: date | None
     status: Literal["DRAFT", "PUBLISHED", "UNLISTED"]
+    roommates: list[RoommateDict]
 
 
 class SwipeDict(TypedDict):

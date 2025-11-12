@@ -2,17 +2,16 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
-from typing import Dict, Tuple
 
 from ..interfaces.types import HostDict, ListingDict, SeekerDict
 
 
-def build_seed() -> Tuple[
-    Dict[str, SeekerDict],
-    Dict[str, HostDict],
-    Dict[str, ListingDict],
+def build_seed() -> tuple[
+    dict[str, SeekerDict],
+    dict[str, HostDict],
+    dict[str, ListingDict],
 ]:
-    seekers: Dict[str, SeekerDict] = {
+    seekers: dict[str, SeekerDict] = {
         "seeker-1": {
             "id": "seeker-1",
             "user_id": "user-1",
@@ -38,7 +37,7 @@ def build_seed() -> Tuple[
             "contact_email": "s2@example.edu",
         },
     }
-    hosts: Dict[str, HostDict] = {
+    hosts: dict[str, HostDict] = {
         "host-1": {
             "id": "host-1",
             "user_id": "user-10",
@@ -47,7 +46,7 @@ def build_seed() -> Tuple[
             "contact_email": "h1@example.edu",
         }
     }
-    listings: Dict[str, ListingDict] = {
+    listings: dict[str, ListingDict] = {
         "listing-1": {
             "id": "listing-1",
             "host_id": "host-1",
@@ -58,6 +57,18 @@ def build_seed() -> Tuple[
             "available_from": date(2025, 8, 15),
             "available_to": None,
             "status": "PUBLISHED",
+            "roommates": [
+                {
+                    "id": "roommate-1",
+                    "name": "Alex",
+                    "pronouns": "they/them",
+                    "sleepingHabits": "early sleeper",
+                    "studyHabits": "library focused",
+                    "cleanliness": "tidy",
+                    "interests": ["cooking", "hiking"],
+                    "bio": "Graduate assistant who enjoys morning runs.",
+                }
+            ],
         }
     }
     return seekers, hosts, listings
