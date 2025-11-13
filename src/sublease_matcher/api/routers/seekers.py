@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import cast
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
@@ -8,6 +9,7 @@ from pydantic import BaseModel
 from ..adapters.memory_uow import InMemoryUnitOfWork
 from ..dependencies.uow import get_uow
 from ..interfaces.errors import NotFoundError, ValidationError
+from ..interfaces.types import SeekerDict
 from .dto import SeekerProfileDTO
 
 router = APIRouter(prefix="/seekers/me", tags=["seekers"])
@@ -31,13 +33,15 @@ def _read_profile(uow: InMemoryUnitOfWork, user_id: str) -> SeekerProfileDTO:
     return SeekerProfileDTO.from_dict(seeker)
 
 
-def _upsert_profile(profile: SeekerProfileDTO, uow: InMemoryUnitOfWork, user_id: str) -> SeekerProfileDTO:
+def _upsert_profile(
+    profile: SeekerProfileDTO, uow: InMemoryUnitOfWork, user_id: str
+) -> SeekerProfileDTO:
     fields_set = profile.model_fields_set
     if "termYear" in fields_set and profile.termYear is not None and profile.termYear < 2024:
         raise ValidationError("termYear must be >= 2024")
 
     existing = uow.seekers.get_by_user(user_id) or {}
-    payload = dict(existing)
+    payload = cast(SeekerDict, dict(existing))
 
     payload["user_id"] = user_id
     if "id" in fields_set and profile.id is not None:

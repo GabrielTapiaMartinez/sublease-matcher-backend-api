@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import TracebackType
 from typing import Self
 
 from ..interfaces.uow import UnitOfWork
@@ -32,8 +33,13 @@ class InMemoryUnitOfWork(UnitOfWork):
         self._committed = False
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
-        if exc:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        if exc_type is not None:
             self.rollback()
         else:
             self.commit()

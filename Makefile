@@ -23,13 +23,15 @@ fmt:
 	$(PY) -m black .
 
 lint:
-	$(PY) -m ruff check .
+	python3 -m ruff check --fix .
+	python3 -m black .
 
 typecheck:
-	$(PY) -m mypy
+	python3 -m mypy ./src
 
 check:
-	$(PY) -m ruff check . && $(PY) -m mypy
+	python3 -m ruff check .
+	python3 -m mypy ./src
 
 clean:
 	rm -rf __pycache__ pycache .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info
