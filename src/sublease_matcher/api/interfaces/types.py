@@ -8,14 +8,15 @@ from typing import Literal, TypedDict
 class SeekerDict(TypedDict, total=False):
     id: str
     user_id: str
-    bio: str
-    term: str
-    term_year: int
-    budget_min: Decimal
-    budget_max: Decimal
-    city: str
-    interests_csv: str
-    contact_email: str
+    bio: str | None
+    term: str | None
+    term_year: int | None
+    budget_min: Decimal | None
+    budget_max: Decimal | None
+    city: str | None
+    interests_csv: str | None
+    contact_email: str | None
+    hidden: bool
 
 
 class HostDict(TypedDict, total=False):
@@ -30,7 +31,7 @@ class ListingDict(TypedDict, total=False):
     id: str
     host_id: str
     title: str
-    price_per_month: Decimal
+    price_per_month: Decimal | None
     city: str
     state: str
     available_from: date
