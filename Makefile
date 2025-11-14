@@ -19,6 +19,13 @@ run-src:
 check-import:
 	$(PY) -c "import sys,pkgutil,importlib; print('sys.path0=',sys.path[0]); print('has_pkg=', any(m.name=='sublease_matcher' for m in pkgutil.iter_modules())); m=importlib.import_module('sublease_matcher.api.main'); print('main_file=',getattr(m,'__file__','<unknown>'))"
 
+
+#testing:
+
+smoke:
+	$(PY) scripts/smoke.py
+
+
 fmt:
 	$(PY) -m black .
 
