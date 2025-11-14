@@ -4,7 +4,7 @@ import json
 import shlex
 import subprocess
 
-#Run file with make smoke, add new tests to the tests list in main()
+# Run file with make smoke, add new tests to the tests list in main()
 
 BASE_URL = "http://127.0.0.1:8000"
 SEEKER_ID = "user-1"
@@ -21,14 +21,12 @@ def run_test(name: str, command: str, expect_fail: bool = False):
 
     # Use shlex.split for robust command parsing
     args = shlex.split(command)
-    process = subprocess.run(
-        args, capture_output=True, text=True, check=False
-    )
+    process = subprocess.run(args, capture_output=True, text=True, check=False)
 
     success = (process.returncode != 0) if expect_fail else (process.returncode == 0)
 
     if success:
-        print(f"✅ PASSED\n")
+        print("✅ PASSED\n")
     else:
         print(f"❌ FAILED (Exit code: {process.returncode})")
         if process.stdout:

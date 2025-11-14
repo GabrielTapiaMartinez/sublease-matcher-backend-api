@@ -1,4 +1,4 @@
-.PHONY: install reinstall run run-src check-import fmt lint typecheck check clean db-create-dev
+.PHONY: install reinstall run run-src check-import fmt lint typecheck check clean db-create-dev db-upgrade db-downgrade db-rev
 
 PY := python3
 
@@ -46,3 +46,12 @@ clean:
 db-create-dev:
 	SM_DATABASE_URL="postgresql+psycopg://$$(whoami)@localhost:5432/sublease_gab_dev" \
 		python3 scripts/create_db_from_models.py
+
+db-upgrade:
+	PYTHONPATH=src alembic upgrade head
+
+db-downgrade:
+	PYTHONPATH=src alembic downgrade -1
+
+db-rev:
+	PYTHONPATH=src alembic revision --autogenerate -m "$$(MSG)"
