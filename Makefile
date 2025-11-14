@@ -1,4 +1,4 @@
-.PHONY: install reinstall run run-src check-import fmt lint typecheck check clean
+.PHONY: install reinstall run run-src check-import fmt lint typecheck check clean db-create-dev
 
 PY := python3
 
@@ -42,3 +42,7 @@ check:
 
 clean:
 	rm -rf __pycache__ pycache .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info
+
+db-create-dev:
+	SM_DATABASE_URL="postgresql+psycopg://$$(whoami)@localhost:5432/sublease_gab_dev" \
+		python3 scripts/create_db_from_models.py

@@ -16,7 +16,7 @@ listings ── matches ── seeker_profiles
   - Columns: `id` (PK uuid), `email` (text, unique), `first_name` (text), `last_name` (text), `current_role` (`role_t` enum), `email_notifications_enabled` (bool), `show_in_swipe` (bool)
   - Constraints: primary key on `id`, unique on `email`
 - `seeker_profiles`
-  - Columns: `id` (PK uuid), `user_id` (FK → `users.id`, unique), `visible` (bool), `bio` (text), `term` (`term_t` enum), `term_year` (int), `budget_min` (`numeric(10,2)`), `budget_max` (`numeric(10,2)`), `city` (text), `interests_csv` (text), `contact_email` (text)
+  - Columns: `id` (PK uuid), `user_id` (FK → `users.id`, unique), `visible` (bool), `bio` (text), `term` (`term_t` enum), `term_year` (int), `budget_min` (`numeric(10,2)`), `budget_max` (`numeric(10,2)`), `city` (text), `interests_csv` (text), `contact_email` (text), `need_from` (date), `need_to` (date, nullable, `CHECK need_to IS NULL OR need_to >= need_from`)
   - Constraints: unique (`user_id`)
 - `seeker_photos`
   - Columns: `id` (PK uuid), `seeker_id` (FK → `seeker_profiles.id`), `position` (int), `url` (text)

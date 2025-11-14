@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Any
 
 from pydantic import field_validator
@@ -11,6 +12,7 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ]
+    database_url: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="SM_")
 
@@ -22,3 +24,8 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         raise ValueError("cors_origins must be a list or comma-separated string")
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    return Settings()
