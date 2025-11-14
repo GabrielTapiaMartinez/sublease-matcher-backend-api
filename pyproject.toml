@@ -12,6 +12,8 @@ dependencies = [
   "uvicorn[standard]>=0.38",
   "pydantic>=2.12",
   "pydantic-settings>=2.11",
+  "SQLAlchemy>=2.0",
+  "psycopg[binary]>=3.2",
 ]
 
 [tool.setuptools]
