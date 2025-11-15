@@ -22,8 +22,8 @@ def test_profile_alias_get_put():
     # PUT alias
     data = {
         "city": "Aliasville",
-        "assigned_from": "2027-01-01",
-        "assigned_to": "2027-06-01",
+        "available_from": "2027-01-01",
+        "available_to": "2027-06-01",
         "budgetMin": 600,
         "budgetMax": 900,
         "interests": ["music", "chess"],
@@ -123,8 +123,8 @@ def test_create_valid():
         "/seekers/me/profile",
         json={
             "city": "Minneapolis",
-            "assigned_from": "2026-01-01",
-            "assigned_to": "2026-05-31",
+            "available_from": "2026-01-01",
+            "available_to": "2026-05-31",
             "budgetMin": 400,
             "budgetMax": 800,
             "interests": ["quiet", "near_campus"],
@@ -139,8 +139,8 @@ def test_create_blank_city():
         "/seekers/me/profile",
         json={
             "city": " ",
-            "assigned_from": "2026-01-01",
-            "assigned_to": "2026-05-31",
+            "available_from": "2026-01-01",
+            "available_to": "2026-05-31",
             "budgetMin": 400,
             "budgetMax": 800,
             "interests": ["quiet", "near_campus"],
@@ -155,8 +155,8 @@ def test_create_invalid_date_order():
         "/seekers/me/profile",
         json={
             "city": "Minneapolis",
-            "assigned_from": "2026-08-01",
-            "assigned_to": "2026-05-01",
+            "available_from": "2026-08-01",
+            "available_to": "2026-05-01",
             "budgetMin": 400,
             "budgetMax": 800,
             "interests": ["quiet", "near_campus"],
@@ -171,8 +171,8 @@ def test_create_invalid_budget():
         "/seekers/me/profile",
         json={
             "city": "Minneapolis",
-            "assigned_from": "2026-01-01",
-            "assigned_to": "2026-05-31",
+            "available_from": "2026-01-01",
+            "available_to": "2026-05-31",
             "budgetMin": 900,
             "budgetMax": 800,
             "interests": ["quiet", "near_campus"],
