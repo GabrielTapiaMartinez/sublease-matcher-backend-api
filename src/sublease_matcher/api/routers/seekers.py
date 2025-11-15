@@ -13,43 +13,74 @@ from .dto import SeekerProfileDTO
 router = APIRouter(prefix="/seekers/me", tags=["seekers"])
 profiles_router = APIRouter(prefix="/profiles", tags=["seekers"])
 
+def _reset_inmemory_uow(uow: InMemoryUnitOfWork):
+    if hasattr(uow.seekers, "clear"):
+        uow.seekers.clear()
+    elif hasattr(uow, "clear"):
+        uow.clear()
+
+def safe_profile_from_dict(d: dict) -> SeekerProfileDTO:
+    min_ = d.get("budget_min")
+    max_ = d.get("budget_max")
+    if min_ is not None and max_ is not None:
+        try:
+            min_val = Decimal(str(min_))
+            max_val = Decimal(str(max_))
+            if min_val < 0 or max_val < 0 or min_val > max_val:
+                d.pop("budget_min", None)
+                d.pop("budget_max", None)
+        except Exception:
+            d.pop("budget_min", None)
+            d.pop("budget_max", None)
+    return SeekerProfileDTO.from_dict(d)
 
 def get_current_user_id(request: Request) -> str:
     return request.headers.get("X-Debug-User-Id") or "user-1"
-
 
 def _clamp_non_negative(value: Decimal | None) -> Decimal | None:
     if value is None:
         return None
     return value if value >= Decimal("0") else Decimal("0")
 
-
 def _read_profile(uow: InMemoryUnitOfWork, user_id: str) -> SeekerProfileDTO:
     seeker = uow.seekers.get_by_user(user_id)
     if seeker is None:
         return SeekerProfileDTO(userId=user_id, hidden=False)
-    return SeekerProfileDTO.from_dict(seeker)
-
+    return safe_profile_from_dict(seeker)
 
 def _upsert_profile(profile: SeekerProfileDTO, uow: InMemoryUnitOfWork, user_id: str) -> SeekerProfileDTO:
     fields_set = profile.model_fields_set
-    if "termYear" in fields_set and profile.termYear is not None and profile.termYear < 2024:
-        raise ValidationError("termYear must be >= 2024")
 
+    # Date range validation
+    has_from = "available_from" in fields_set and profile.available_from is not None
+    has_to = "available_to" in fields_set and profile.available_to is not None
+    if has_from and has_to:
+        if profile.available_from > profile.available_to:
+            raise ValidationError("available_from must be before or equal to available_to")
+
+    # Budget validation
+    if ("budgetMin" in fields_set and profile.budgetMin is not None) and \
+       ("budgetMax" in fields_set and profile.budgetMax is not None):
+        if profile.budgetMin > profile.budgetMax:
+            raise ValidationError("budgetMin must be less than or equal to budgetMax")
+
+    # Make sure we persist/update the same profile ID for the user
     existing = uow.seekers.get_by_user(user_id) or {}
-    payload = dict(existing)
+    payload = dict(existing)  # Start from the existing payload if exists
 
     payload["user_id"] = user_id
+    # Use the existing ID if present, otherwise any provided
     if "id" in fields_set and profile.id is not None:
         payload["id"] = profile.id
+    elif "id" in existing:
+        payload["id"] = existing["id"]
 
     if "bio" in fields_set:
         payload["bio"] = profile.bio
-    if "term" in fields_set:
-        payload["term"] = profile.term
-    if "termYear" in fields_set:
-        payload["term_year"] = profile.termYear
-
+    if "available_from" in fields_set:
+        payload["available_from"] = profile.available_from
+    if "available_to" in fields_set:
+        payload["available_to"] = profile.available_to
     if "budgetMin" in fields_set:
         payload["budget_min"] = _clamp_non_negative(profile.budgetMin)
     if "budgetMax" in fields_set:
@@ -64,8 +95,7 @@ def _upsert_profile(profile: SeekerProfileDTO, uow: InMemoryUnitOfWork, user_id:
         payload["hidden"] = profile.hidden
 
     saved = uow.seekers.upsert(payload)
-    return SeekerProfileDTO.from_dict(saved)
-
+    return safe_profile_from_dict(saved)
 
 def _toggle_hidden(hidden: bool, uow: InMemoryUnitOfWork, user_id: str) -> bool:
     seeker = uow.seekers.get_by_user(user_id)
@@ -75,14 +105,12 @@ def _toggle_hidden(hidden: bool, uow: InMemoryUnitOfWork, user_id: str) -> bool:
     uow.seekers.upsert(seeker)
     return hidden
 
-
 @router.get("/profile", response_model=SeekerProfileDTO)
 def read_profile(
     uow: InMemoryUnitOfWork = Depends(get_uow),
     user_id: str = Depends(get_current_user_id),
 ) -> SeekerProfileDTO:
     return _read_profile(uow, user_id)
-
 
 @router.put("/profile", response_model=SeekerProfileDTO)
 def upsert_profile(
@@ -92,14 +120,11 @@ def upsert_profile(
 ) -> SeekerProfileDTO:
     return _upsert_profile(profile, uow, user_id)
 
-
 class HideToggle(BaseModel):
     hidden: bool
 
-
 class HideResponse(BaseModel):
     hidden: bool
-
 
 @profiles_router.get("/me", response_model=SeekerProfileDTO)
 def read_profile_alias(
@@ -108,7 +133,6 @@ def read_profile_alias(
 ) -> SeekerProfileDTO:
     return _read_profile(uow, user_id)
 
-
 @profiles_router.put("/me", response_model=SeekerProfileDTO)
 def upsert_profile_alias(
     profile: SeekerProfileDTO,
@@ -116,7 +140,6 @@ def upsert_profile_alias(
     user_id: str = Depends(get_current_user_id),
 ) -> SeekerProfileDTO:
     return _upsert_profile(profile, uow, user_id)
-
 
 @profiles_router.patch("/hide", response_model=HideResponse)
 def toggle_profile_hidden(
