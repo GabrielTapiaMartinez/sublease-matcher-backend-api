@@ -123,7 +123,7 @@ class HostListingDTO(BaseModel):
             "examples": [
                 {
                     "id": "listing-1",
-                    "hostId": "host-1",
+                    "host_Id": "host-1",
                     "title": "Room near Water St",
                     "pricePerMonth": "650",
                     "city": "Eau Claire",
