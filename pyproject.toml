@@ -12,6 +12,9 @@ dependencies = [
   "uvicorn[standard]>=0.38",
   "pydantic>=2.12",
   "pydantic-settings>=2.11",
+  "SQLAlchemy>=2.0",
+  "psycopg[binary]>=3.2",
+  "alembic>=1.13",
 ]
 
 [tool.setuptools]
@@ -28,9 +31,11 @@ target-version = ["py312"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-select = ["E", "F", "I", "UP", "B"]
-ignore = ["E501"]
 src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501", "B008"]
 
 [tool.mypy]
 python_version = "3.12"

@@ -1,5 +1,6 @@
 """Infrastructure adapters live here."""
 
+from .match_engine_simple import SimpleMatchEngine
 from .memory_repos import (
     InMemoryHostRepo,
     InMemoryListingRepo,
@@ -8,7 +9,7 @@ from .memory_repos import (
     InMemorySwipeRepo,
 )
 from .memory_uow import InMemoryUnitOfWork
-from .match_engine_simple import SimpleMatchEngine
+from .sqlalchemy.uow import SqlAlchemyUnitOfWork
 
 __all__ = [
     "InMemoryHostRepo",
@@ -17,5 +18,6 @@ __all__ = [
     "InMemorySeekerRepo",
     "InMemorySwipeRepo",
     "InMemoryUnitOfWork",
+    "SqlAlchemyUnitOfWork",
     "SimpleMatchEngine",
 ]

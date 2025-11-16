@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import date
 from decimal import Decimal
 from typing import Any, Dict, Mapping
@@ -50,7 +51,7 @@ class SeekerProfileDTO(BaseModel):
 
     def to_dict(self) -> Dict[str, Any]:
         interests_csv = ",".join(self.interests)
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "id": self.id,
             "user_id": self.userId,
             "bio": self.bio,
@@ -85,9 +86,14 @@ class SeekerProfileDTO(BaseModel):
         )
 
 
-class RoommatePublicDTO(BaseModel):
+class RoommateDTO(BaseModel):
     id: str | None = None
     name: str | None = None
+    pronouns: str | None = None
+    sleepingHabits: str | None = None
+    studyHabits: str | None = None
+    cleanliness: str | None = None
+    interests: list[str] = Field(default_factory=list)
     bio: str | None = None
 
     model_config = ConfigDict(
@@ -96,7 +102,12 @@ class RoommatePublicDTO(BaseModel):
                 {
                     "id": "roommate-1",
                     "name": "Alex",
-                    "bio": "Graduate assistant, quiet, enjoys hiking",
+                    "pronouns": "they/them",
+                    "sleepingHabits": "early sleeper",
+                    "studyHabits": "library focused",
+                    "cleanliness": "tidy",
+                    "interests": ["cooking", "hiking"],
+                    "bio": "Graduate assistant who enjoys morning runs.",
                 }
             ]
         }
@@ -115,7 +126,7 @@ class HostListingDTO(BaseModel):
     status: Literal["DRAFT", "PUBLISHED", "UNLISTED"] | None = None
     contactEmail: str | None = None
     bio: str | None = None
-    roommates: list[RoommatePublicDTO] = Field(default_factory=list)
+    roommates: list[RoommateDTO] = Field(default_factory=list)
 
     model_config = ConfigDict(
         from_attributes=False,
@@ -133,12 +144,24 @@ class HostListingDTO(BaseModel):
                     "status": "PUBLISHED",
                     "contactEmail": "h1@example.edu",
                     "bio": "2BR apartment close to campus",
+                    "roommates": [
+                        {
+                            "id": "roommate-1",
+                            "name": "Alex",
+                            "pronouns": "they/them",
+                            "sleepingHabits": "early sleeper",
+                            "studyHabits": "library focused",
+                            "cleanliness": "tidy",
+                            "interests": ["cooking", "hiking"],
+                            "bio": "Graduate assistant who enjoys morning runs.",
+                        }
+                    ],
                 }
             ]
         },
     )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "host_id": self.hostId,
@@ -153,7 +176,7 @@ class HostListingDTO(BaseModel):
             "bio": self.bio,
         }
 
-    def to_host_dict(self, user_id: str) -> Dict[str, Any]:
+    def to_host_dict(self, user_id: str) -> dict[str, Any]:
         return {
             "id": self.hostId,
             "user_id": user_id,
@@ -161,7 +184,7 @@ class HostListingDTO(BaseModel):
             "contact_email": self.contactEmail,
         }
 
-    def to_listing_dict(self, host_id: str) -> Dict[str, Any]:
+    def to_listing_dict(self, host_id: str) -> dict[str, Any]:
         return {
             "id": self.id,
             "host_id": host_id,
@@ -172,9 +195,7 @@ class HostListingDTO(BaseModel):
             "available_from": self.availableFrom,
             "available_to": self.availableTo,
             "status": self.status,
-            "roommates": [
-                roommate.model_dump(exclude_none=True) for roommate in self.roommates
-            ],
+            "roommates": [roommate.model_dump(exclude_none=True) for roommate in self.roommates],
         }
 # RoommatePublicDTO and HostListingDTO stay as they are unless you also need to update their fields.
 
@@ -186,9 +207,7 @@ class HostListingDTO(BaseModel):
     ) -> HostListingDTO:
         roommates_data = (listing or {}).get("roommates") or []
         roommates = [
-            RoommatePublicDTO(**roommate)
-            if isinstance(roommate, Mapping)
-            else RoommatePublicDTO()
+            RoommateDTO(**roommate) if isinstance(roommate, Mapping) else RoommateDTO()
             for roommate in roommates_data
         ]
         return cls(

@@ -2,7 +2,26 @@
 
 FastAPI HTTP surface for the Sublease Matcher platform. Provides in-memory adapters, typed DTOs, and health/debug utilities so the frontend team can iterate quickly.
 
-## Quickstart
+## Storage modes
+- `memory` (default): in-memory storage, great for quick smoke tests; no Postgres required.
+- `sqlalchemy`: Postgres-backed storage using SQLAlchemy, Alembic migrations, and the SQL unit of work.
+
+`SM_STORAGE` selects the backend (`memory` or `sqlalchemy`). `SM_DATABASE_URL` points at your Postgres instance; the Makefile defines `DB_DEV_URL` as the default local dev database (`sublease_dev_sql`).
+
+### Backend quickstart
+See `docs/db/README.md` for OS-specific Postgres setup and migration details.
+
+
+
+## SQL dev (Postgres)
+```bash
+createdb sublease_dev_sql          # one-time creation
+make db-dev-reset-sql              # migrations + deterministic seed data
+make run-sql                       # SQL-backed API (uses DB_DEV_URL)
+# Optional smoke:
+make db-dev-smoke-sql
+```
+## Backend quickstart In-memory (no Postgres)
 1. Create a Python 3.12 virtual environment:
    ```bash
    python3 -m venv .venv
@@ -17,10 +36,18 @@ FastAPI HTTP surface for the Sublease Matcher platform. Provides in-memory adapt
    make install
    pip install -e ../sublease-matcher-backend-core
    ```
-4. Run the server (src-layout aware):
+4. Run checks:
+   ```bash
+   make check
+   ```
+5. Start the server with the default in-memory backend:
    ```bash
    make run-src
    ```
+
+## Choosing a backend
+- Use `memory` (default) when hacking on endpoints or iterating quickly without Postgres.
+- Use `sqlalchemy` when working on persistence, testing queries, or running smoke tests with real data.
 
 ## Endpoints
 - Health: `GET /healthz`

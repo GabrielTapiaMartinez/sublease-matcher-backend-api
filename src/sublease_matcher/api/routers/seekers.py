@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import cast
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
@@ -8,6 +9,7 @@ from pydantic import BaseModel
 from ..adapters.memory_uow import InMemoryUnitOfWork
 from ..dependencies.uow import get_uow
 from ..interfaces.errors import NotFoundError, ValidationError
+from ..interfaces.types import SeekerDict
 from .dto import SeekerProfileDTO
 
 router = APIRouter(prefix="/seekers/me", tags=["seekers"])
@@ -48,7 +50,9 @@ def _read_profile(uow: InMemoryUnitOfWork, user_id: str) -> SeekerProfileDTO:
         return SeekerProfileDTO(userId=user_id, hidden=False)
     return safe_profile_from_dict(seeker)
 
-def _upsert_profile(profile: SeekerProfileDTO, uow: InMemoryUnitOfWork, user_id: str) -> SeekerProfileDTO:
+def _upsert_profile(
+    profile: SeekerProfileDTO, uow: InMemoryUnitOfWork, user_id: str
+) -> SeekerProfileDTO:
     fields_set = profile.model_fields_set
 
     # Date range validation

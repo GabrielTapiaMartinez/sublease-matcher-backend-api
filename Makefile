@@ -1,6 +1,7 @@
-.PHONY: install reinstall run run-src check-import fmt lint typecheck check clean
+.PHONY: install reinstall run run-src run-sql check-import fmt lint typecheck check clean db-create-dev db-upgrade db-downgrade db-rev db-dev-reset-sql db-dev-smoke-sql smoke-sql
 
 PY := python3
+DB_DEV_URL ?= postgresql+psycopg://$$(whoami)@localhost:5432/sublease_dev_sql
 
 install:
 	$(PY) -m pip install -e .
@@ -16,20 +17,63 @@ run:
 run-src:
 	uvicorn --app-dir src sublease_matcher.api.main:app --reload
 
+run-sql:
+	SM_DATABASE_URL="$(DB_DEV_URL)" \
+		SM_STORAGE=sqlalchemy \
+		uvicorn --app-dir src sublease_matcher.api.main:app --reload
+
 check-import:
 	$(PY) -c "import sys,pkgutil,importlib; print('sys.path0=',sys.path[0]); print('has_pkg=', any(m.name=='sublease_matcher' for m in pkgutil.iter_modules())); m=importlib.import_module('sublease_matcher.api.main'); print('main_file=',getattr(m,'__file__','<unknown>'))"
+
+
+#testing:
+
+smoke:
+	$(PY) scripts/smoke.py
+
 
 fmt:
 	$(PY) -m black .
 
 lint:
-	$(PY) -m ruff check .
+	python3 -m ruff check --fix .
+	python3 -m black .
 
 typecheck:
-	$(PY) -m mypy
+	python3 -m mypy ./src
 
 check:
-	$(PY) -m ruff check . && $(PY) -m mypy
+	python3 -m ruff check .
+	python3 -m mypy ./src
 
 clean:
 	rm -rf __pycache__ pycache .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info
+
+# Database helpers: prefer overriding DB_DEV_URL/SM_DATABASE_URL from your shell instead of hard-coding usernames/hosts; avoid editing DB targets without updating docs.
+
+db-create-dev:
+	SM_DATABASE_URL="$(DB_DEV_URL)" \
+		PYTHONPATH=src python3 scripts/db/create_db_from_models.py
+
+db-upgrade:
+	SM_DATABASE_URL="$(DB_DEV_URL)" \
+		PYTHONPATH=src alembic upgrade head
+
+db-downgrade:
+	SM_DATABASE_URL="$(DB_DEV_URL)" \
+		PYTHONPATH=src alembic downgrade -1
+
+db-rev:
+	SM_DATABASE_URL="$(DB_DEV_URL)" \
+		PYTHONPATH=src alembic revision --autogenerate -m "$$(MSG)"
+
+db-dev-reset-sql:
+	SM_DATABASE_URL="$(DB_DEV_URL)" \
+		PYTHONPATH=src python3 scripts/db/reset_and_seed_dev.py
+
+db-dev-smoke-sql:
+	SM_DATABASE_URL="$(DB_DEV_URL)" \
+		SM_STORAGE=sqlalchemy \
+		PYTHONPATH=src python3 scripts/db/smoke_sql.py
+
+smoke-sql: db-dev-smoke-sql
