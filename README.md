@@ -2,7 +2,7 @@
 
 FastAPI HTTP surface for the Sublease Matcher platform. Provides in-memory adapters, typed DTOs, and health/debug utilities so the frontend team can iterate quickly.
 
-## Quickstart
+## Backend quickstart (in-memory)
 1. Create a Python 3.12 virtual environment:
    ```bash
    python3 -m venv .venv
@@ -17,10 +17,28 @@ FastAPI HTTP surface for the Sublease Matcher platform. Provides in-memory adapt
    make install
    pip install -e ../sublease-matcher-backend-core
    ```
-4. Run the server (src-layout aware):
+4. Run checks:
+   ```bash
+   make check
+   ```
+5. Start the server with the default in-memory backend:
    ```bash
    make run-src
    ```
+
+## Backend quickstart (SQL/Postgres)
+See `docs/db/README.md` for OS-specific Postgres setup.
+
+```bash
+createdb sublease_dev_sql  # once
+make db-dev-reset-sql      # migrations + deterministic seed data
+make db-dev-smoke-sql      # optional: /healthz + sample profile/listing checks
+SM_STORAGE=sqlalchemy SM_DATABASE_URL=postgresql+psycopg://$USER@localhost:5432/sublease_dev_sql make run-sql
+```
+
+## Choosing a backend
+- Use `memory` (default) when hacking on endpoints or iterating quickly without Postgres.
+- Use `sqlalchemy` when working on persistence, testing queries, or running smoke tests with real data.
 
 ## Endpoints
 - Health: `GET /healthz`
