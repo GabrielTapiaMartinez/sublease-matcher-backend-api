@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 
 
 class SeekerDict(TypedDict, total=False):
@@ -22,21 +22,22 @@ class SeekerDict(TypedDict, total=False):
 class HostDict(TypedDict, total=False):
     id: str
     user_id: str
-    bio: str
-    house_rules: str
-    contact_email: str
+    bio: str | None
+    house_rules: str | None
+    contact_email: str | None
 
 
 class ListingDict(TypedDict, total=False):
     id: str
     host_id: str
-    title: str
+    title: str | None
     price_per_month: Decimal | None
-    city: str
-    state: str
-    available_from: date
+    city: str | None
+    state: str | None
+    available_from: date | None
     available_to: date | None
     status: Literal["DRAFT", "PUBLISHED", "UNLISTED"]
+    roommates: list[dict[str, Any]]
 
 
 class SwipeDict(TypedDict):

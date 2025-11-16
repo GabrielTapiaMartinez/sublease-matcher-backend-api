@@ -55,3 +55,7 @@ db-downgrade:
 
 db-rev:
 	PYTHONPATH=src alembic revision --autogenerate -m "$$(MSG)"
+
+smoke-sql:
+	SM_DATABASE_URL="postgresql+psycopg://$$(whoami)@localhost:5432/sublease_gab_dev" \
+		SM_STORAGE=sqlalchemy python3 scripts/smoke_sql.py

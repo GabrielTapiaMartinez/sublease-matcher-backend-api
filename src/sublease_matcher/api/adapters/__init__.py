@@ -9,6 +9,7 @@ from .memory_repos import (
     InMemorySwipeRepo,
 )
 from .memory_uow import InMemoryUnitOfWork
+from .sqlalchemy.uow import SqlAlchemyUnitOfWork
 
 __all__ = [
     "InMemoryHostRepo",
@@ -17,5 +18,6 @@ __all__ = [
     "InMemorySeekerRepo",
     "InMemorySwipeRepo",
     "InMemoryUnitOfWork",
+    "SqlAlchemyUnitOfWork",
     "SimpleMatchEngine",
 ]
