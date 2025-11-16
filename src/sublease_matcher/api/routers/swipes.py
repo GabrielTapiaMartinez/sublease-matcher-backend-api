@@ -18,11 +18,11 @@ public_router = APIRouter(tags=["swipe"])
 
 
 def get_user_id(request: Request) -> str:
-    return request.headers.get("X-Debug-User-Id") or "user-1"
+    return request.headers.get("user_id") or "user-1"
 
 
 def get_host_user_id(request: Request) -> str:
-    return request.headers.get("X-Debug-User-Id") or "user-10"
+    return request.headers.get("user_id") or "user-10"
 
 
 class SwipeIn(BaseModel):
@@ -242,9 +242,9 @@ def undo_swipe(
     return UndoResponse(restored=_to_swipe_out(restored) if restored else None)
 
 
-def _compute_matches(request: Request, uow: InMemoryUnitOfWork) -> list[MatchOut]:
-    header_user = request.headers.get("X-Debug-User-Id")
-    candidate_users: list[str] = []
+def _compute_matches(request: Request, uow: InMemoryUnitOfWork) -> List[MatchOut]:
+    header_user = request.headers.get("user_id")
+    candidate_users: List[str] = []
     if header_user:
         candidate_users.append(header_user)
     else:

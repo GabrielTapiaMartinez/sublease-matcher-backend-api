@@ -17,7 +17,7 @@ public_router = APIRouter(prefix="/listings", tags=["listings"])
 
 
 def get_current_user_id(request: Request) -> str:
-    return request.headers.get("X-Debug-User-Id") or "user-10"
+    return request.headers.get("user_id") or "user-10"
 
 
 def _clamp_non_negative(value: Decimal | None) -> Decimal | None:

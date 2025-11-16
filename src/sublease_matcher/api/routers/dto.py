@@ -3,17 +3,15 @@ from __future__ import annotations
 from collections.abc import Mapping
 from datetime import date
 from decimal import Decimal
-from typing import Any, Literal
-
-from pydantic import BaseModel, ConfigDict, Field
-
+from typing import Any, Dict, Mapping
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 class SeekerProfileDTO(BaseModel):
     id: str | None = None
     userId: str | None = None
     bio: str | None = None
-    term: str | None = None
-    termYear: int | None = None
+    available_from: date | None = None
+    available_to: date | None = None
     budgetMin: Decimal | None = None
     budgetMax: Decimal | None = None
     city: str | None = None
@@ -29,8 +27,8 @@ class SeekerProfileDTO(BaseModel):
                     "id": "seeker-1",
                     "userId": "user-1",
                     "bio": "Sophomore looking for quiet place",
-                    "term": "Fall",
-                    "termYear": 2025,
+                    "available_from": "2026-01-01",
+                    "available_to": "2026-05-31",
                     "budgetMin": "400",
                     "budgetMax": "700",
                     "city": "Eau Claire",
@@ -41,14 +39,24 @@ class SeekerProfileDTO(BaseModel):
         },
     )
 
-    def to_dict(self) -> dict[str, Any]:
+    @model_validator(mode="after")
+    def validate_ranges(self):
+        if self.available_from and self.available_to:
+            if self.available_from > self.available_to:
+                raise ValueError("available_from must be before or equal to available_to")
+        if self.budgetMin is not None and self.budgetMax is not None:
+            if self.budgetMin > self.budgetMax:
+                raise ValueError("budgetMin must be less than or equal to budgetMax")
+        return self
+
+    def to_dict(self) -> Dict[str, Any]:
         interests_csv = ",".join(self.interests)
         data: dict[str, Any] = {
             "id": self.id,
             "user_id": self.userId,
             "bio": self.bio,
-            "term": self.term,
-            "term_year": self.termYear,
+            "available_from": self.available_from,
+            "available_to": self.available_to,
             "budget_min": self.budgetMin,
             "budget_max": self.budgetMax,
             "city": self.city,
@@ -67,8 +75,8 @@ class SeekerProfileDTO(BaseModel):
             id=data.get("id"),
             userId=data.get("user_id"),
             bio=data.get("bio"),
-            term=data.get("term"),
-            termYear=data.get("term_year"),
+            available_from=data.get("available_from"),
+            available_to=data.get("available_to"),
             budgetMin=data.get("budget_min"),
             budgetMax=data.get("budget_max"),
             city=data.get("city"),
@@ -126,7 +134,7 @@ class HostListingDTO(BaseModel):
             "examples": [
                 {
                     "id": "listing-1",
-                    "hostId": "host-1",
+                    "host_Id": "host-1",
                     "title": "Room near Water St",
                     "pricePerMonth": "650",
                     "city": "Eau Claire",
@@ -189,6 +197,7 @@ class HostListingDTO(BaseModel):
             "status": self.status,
             "roommates": [roommate.model_dump(exclude_none=True) for roommate in self.roommates],
         }
+# RoommatePublicDTO and HostListingDTO stay as they are unless you also need to update their fields.
 
     @classmethod
     def from_parts(
@@ -215,3 +224,7 @@ class HostListingDTO(BaseModel):
             bio=(host or {}).get("bio"),
             roommates=roommates,
         )
+
+
+# RoommatePublicDTO and HostListingDTO stay as they are unless you also need to update their fields.
+
