@@ -9,9 +9,25 @@ import subprocess
 import sys
 import time
 from contextlib import suppress
+from getpass import getuser
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
+
+DEFAULT_DB_NAME = "sublease_dev_sql"
+
+
+def _default_database_url(env: dict[str, str]) -> str:
+    user = env.get("USER") or getuser()
+    return f"postgresql+psycopg://{user}@localhost:5432/{DEFAULT_DB_NAME}"
+
+
+def _ensure_database_url(env: dict[str, str]) -> str:
+    database_url = env.get("SM_DATABASE_URL")
+    if not database_url:
+        database_url = _default_database_url(env)
+        env["SM_DATABASE_URL"] = database_url
+    return database_url
 
 
 def _log(message: str) -> None:
@@ -49,11 +65,12 @@ def seed_demo_data(env: dict[str, str]) -> None:
 
 def main() -> None:
     env = os.environ.copy()
-    database_url = env.get("SM_DATABASE_URL")
+    database_url = _ensure_database_url(env)
     if not database_url:
         raise SystemExit("SM_DATABASE_URL must be set for smoke_sql.py")
     env.setdefault("PYTHONPATH", "src")
     env.setdefault("SM_STORAGE", "sqlalchemy")
+    _log(f"Using database URL: {database_url}")
 
     _log("Applying migrations...")
     _run(["python3", "-m", "alembic", "upgrade", "head"], env=env)

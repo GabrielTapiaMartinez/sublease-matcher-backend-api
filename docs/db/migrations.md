@@ -18,6 +18,8 @@ or use the Make targets:
 - `make db-rev MSG="add new table"` → autogenerates a revision
 - `make db-dev-reset-sql` → run migrations + dev seed flow (local only)
 
+After upgrading in dev, rerun the seed flow (`make db-dev-reset-sql` or `scripts/db/seed_sql.py`) to refresh deterministic data.
+
 ## Enum policy
 
 - Enum types (`decision_t`, `listing_status_t`, `match_status_t`, `role_t`, `term_t`) live in the `public` schema; the initial migration creates them once.

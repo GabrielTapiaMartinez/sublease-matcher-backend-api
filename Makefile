@@ -1,7 +1,7 @@
 .PHONY: install reinstall run run-src run-sql check-import fmt lint typecheck check clean db-create-dev db-upgrade db-downgrade db-rev db-dev-reset-sql db-dev-smoke-sql smoke-sql
 
 PY := python3
-DB_DEV_URL := postgresql+psycopg://$$(whoami)@localhost:5432/sublease_dev_sql
+DB_DEV_URL ?= postgresql+psycopg://$$(whoami)@localhost:5432/sublease_dev_sql
 
 install:
 	$(PY) -m pip install -e .
@@ -18,7 +18,8 @@ run-src:
 	uvicorn --app-dir src sublease_matcher.api.main:app --reload
 
 run-sql:
-	SM_DATABASE_URL="$(DB_DEV_URL)" SM_STORAGE=sqlalchemy \
+	SM_DATABASE_URL="$(DB_DEV_URL)" \
+		SM_STORAGE=sqlalchemy \
 		uvicorn --app-dir src sublease_matcher.api.main:app --reload
 
 check-import:
@@ -48,20 +49,23 @@ check:
 clean:
 	rm -rf __pycache__ pycache .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info
 
-# Database helpers: prefer overriding DB_DEV_URL/SM_DATABASE_URL from your shell instead of hard-coding usernames.
+# Database helpers: prefer overriding DB_DEV_URL/SM_DATABASE_URL from your shell instead of hard-coding usernames/hosts; avoid editing DB targets without updating docs.
 
 db-create-dev:
 	SM_DATABASE_URL="$(DB_DEV_URL)" \
 		PYTHONPATH=src python3 scripts/db/create_db_from_models.py
 
 db-upgrade:
-	PYTHONPATH=src alembic upgrade head
+	SM_DATABASE_URL="$(DB_DEV_URL)" \
+		PYTHONPATH=src alembic upgrade head
 
 db-downgrade:
-	PYTHONPATH=src alembic downgrade -1
+	SM_DATABASE_URL="$(DB_DEV_URL)" \
+		PYTHONPATH=src alembic downgrade -1
 
 db-rev:
-	PYTHONPATH=src alembic revision --autogenerate -m "$$(MSG)"
+	SM_DATABASE_URL="$(DB_DEV_URL)" \
+		PYTHONPATH=src alembic revision --autogenerate -m "$$(MSG)"
 
 db-dev-reset-sql:
 	SM_DATABASE_URL="$(DB_DEV_URL)" \

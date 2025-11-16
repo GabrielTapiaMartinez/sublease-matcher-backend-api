@@ -1,5 +1,27 @@
 # Database Onboarding
 
+Local dev can run with the in-memory backend or Postgres. SQL storage uses Postgres + SQLAlchemy + Alembic + the SQL unit of work. See `docs/db/schema.md` for table notes and `docs/db/migrations.md` for Alembic commands.
+
+## Local SQL dev workflow
+
+### Prerequisites
+- Postgres installed locally.
+- `psql`, `createdb`, and `dropdb` available on your shell PATH.
+- macOS: `brew install postgresql@16` (or Postgres.app), then `brew services start postgresql@16`.
+- Windows: install Postgres via the official installer; start the `postgresql` service from Services or pgAdmin; ensure `psql` works in your terminal.
+
+### Commands
+```bash
+createdb sublease_dev_sql            # one-time dev DB creation
+make db-dev-reset-sql                # migrations + deterministic seed data
+make db-dev-smoke-sql                # optional: /healthz + sample seeker/listing checks
+make run-sql                         # API with SQL backend (uses DB_DEV_URL)
+```
+
+## Seed data (dev only)
+- Deterministic IDs: seeker (`user-1` / `seeker-1`), host (`user-10` / `host-1` / `listing-1`).
+- Relative photo paths: `/static/mock/seekers/...`, `/static/mock/listings/...`, `/static/mock/roommates/...`.
+- Dev-only: `db-dev-reset-sql` truncates/wipes local dev data. Do not point dev helpers at shared or production databases.
 We support two storage backends:
 
 - `memory` (default): no Postgres required.
@@ -27,7 +49,7 @@ We support two storage backends:
 ## Dev workflows
 - In-memory:
   - No Postgres required; leave `SM_STORAGE` unset or `memory`.
-  - Start server: `make run` (or `make run-src`).
+  - Start server: `make run-src`
 - SQL:
   - `createdb sublease_dev_sql` (once).
   - `make db-dev-reset-sql` (applies migrations and seeds deterministic data).

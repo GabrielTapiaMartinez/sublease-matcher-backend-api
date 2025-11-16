@@ -1,16 +1,37 @@
 #!/usr/bin/env python3
 """[db-seed] Reset and seed the SQL dev database with deterministic demo data."""
+# ruff: noqa: E402
 
 from __future__ import annotations
 
+import os
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from getpass import getuser
 from typing import Any, Final
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
-from sublease_matcher.api.adapters.sqlalchemy import models
+DEFAULT_DB_NAME = "sublease_dev_sql"
+
+
+def _default_database_url() -> str:
+    user = os.environ.get("USER") or getuser()
+    return f"postgresql+psycopg://{user}@localhost:5432/{DEFAULT_DB_NAME}"
+
+
+def _ensure_database_url() -> str:
+    database_url = os.environ.get("SM_DATABASE_URL")
+    if not database_url:
+        database_url = _default_database_url()
+        os.environ["SM_DATABASE_URL"] = database_url
+    return database_url
+
+
+_ensure_database_url()
+
+from sublease_matcher.api.adapters.sqlalchemy import models  # noqa: E402
 from sublease_matcher.api.adapters.sqlalchemy.db import SessionLocal
 from sublease_matcher.api.adapters.sqlalchemy.uow import SqlAlchemyUnitOfWork
 
@@ -250,6 +271,9 @@ def _seed_swipes_and_matches(uow: SqlAlchemyUnitOfWork) -> None:
 
 def main() -> None:
     _log("Resetting SQL dev database...")
+    database_url = os.environ.get("SM_DATABASE_URL")
+    if database_url:
+        _log(f"Using database URL: {database_url}")
     with SqlAlchemyUnitOfWork(SessionLocal) as uow:
         _truncate_tables(uow.session)
         _seed_users(uow)

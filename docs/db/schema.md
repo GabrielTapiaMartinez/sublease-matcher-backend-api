@@ -48,4 +48,4 @@ listings ── matches ── seeker_profiles
 
 All enums live in the `public` schema; use `\dT+` inside `psql` to list them.
 
-> Note: Dev seeds use deterministic text IDs (`user-1`, `listing-1`, etc.) and store photo URLs as relative `/static/mock/seekers|listings|roommates/...` paths so the SQL backend mirrors the in-memory data. The production schema keeps the same constraints and date-range checks (`need_from`/`need_to`, `available_from`/`available_to`); migrate IDs to UUIDs later if needed.
+> Note: IDs like `user-1` and `listing-1` are deterministic for dev seeding, and photo URLs remain relative (`/static/mock/seekers|listings|roommates/...`). Production can move to UUID primary keys and real media storage later while keeping the simple dev seeds.
