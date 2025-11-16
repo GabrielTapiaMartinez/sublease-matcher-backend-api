@@ -3,9 +3,14 @@ from __future__ import annotations
 from collections.abc import Mapping
 from datetime import date
 from decimal import Decimal
-from typing import Any
+from typing import TYPE_CHECKING, Any, Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+DRAFT: Final = "DRAFT"
+PUBLISHED: Final = "PUBLISHED"
+UNLISTED: Final = "UNLISTED"
+ListingStatus = Literal["DRAFT", "PUBLISHED", "UNLISTED"]
 
 
 class SeekerProfileDTO(BaseModel):
@@ -42,7 +47,7 @@ class SeekerProfileDTO(BaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_ranges(self):
+    def validate_ranges(self) -> SeekerProfileDTO:
         if self.available_from and self.available_to:
             if self.available_from > self.available_to:
                 raise ValueError("available_from must be before or equal to available_to")
@@ -125,7 +130,7 @@ class HostListingDTO(BaseModel):
     state: str | None = None
     availableFrom: date | None = None
     availableTo: date | None = None
-    status: Literal[DRAFT, PUBLISHED, UNLISTED] | None = None
+    status: ListingStatus | None = None
     contactEmail: str | None = None
     bio: str | None = None
     roommates: list[RoommateDTO] = Field(default_factory=list)
@@ -230,3 +235,8 @@ class HostListingDTO(BaseModel):
 
 # RoommatePublicDTO and HostListingDTO stay as they are unless you also need to update their fields.
 
+
+if not TYPE_CHECKING:
+    SeekerProfileDTO.model_rebuild()
+    RoommateDTO.model_rebuild()
+    HostListingDTO.model_rebuild()
