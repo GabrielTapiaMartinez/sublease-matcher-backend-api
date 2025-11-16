@@ -28,10 +28,12 @@ src/sublease_matcher/api/
 ✅ Starts with `uvicorn sublease_matcher.api.main:app --reload`  
 ✅ `/healthz` returns 200  
 ✅ All code typed  
-✅ README accurate
+✅ README accurate (storage modes, DB docs, Makefile targets)
 
 ## How to use Codex here
 - Guardrails: only modify files under `src/sublease_matcher/api/*` plus docs/config when requested.
 - See runs 1–6 for history: bootstrapped FastAPI, packaging fixes, interface protocols, in-memory adapters/UoW, profile & listing routers, swipe/match flows, CORS and tooling.
 - Prompts must keep typing strict and avoid leaking framework code into the shared core repo.
 - Add new HTTP endpoints under `routers/`, wiring through adapters/services as needed; add new infrastructure or seed data under `adapters/`; define shared contracts in `interfaces/`.
+- Storage modes: `SM_STORAGE=memory` (default) or `sqlalchemy` with `SM_DATABASE_URL`; dev defaults live in the Makefile (`DB_DEV_URL`).
+- DB docs live in `docs/db/`; keep README/dev guides aligned when changing DB helpers or Makefile targets.

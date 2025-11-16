@@ -3,8 +3,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from datetime import date
 from decimal import Decimal
-from typing import Any, Dict, Mapping
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
 
 class SeekerProfileDTO(BaseModel):
     id: str | None = None
@@ -49,7 +51,7 @@ class SeekerProfileDTO(BaseModel):
                 raise ValueError("budgetMin must be less than or equal to budgetMax")
         return self
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         interests_csv = ",".join(self.interests)
         data: dict[str, Any] = {
             "id": self.id,
@@ -123,7 +125,7 @@ class HostListingDTO(BaseModel):
     state: str | None = None
     availableFrom: date | None = None
     availableTo: date | None = None
-    status: Literal["DRAFT", "PUBLISHED", "UNLISTED"] | None = None
+    status: Literal[DRAFT, PUBLISHED, UNLISTED] | None = None
     contactEmail: str | None = None
     bio: str | None = None
     roommates: list[RoommateDTO] = Field(default_factory=list)

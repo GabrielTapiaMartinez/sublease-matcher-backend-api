@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+
 from sublease_matcher.api.main import app  # Adjust this import to your actual FastAPI app location
 
 client = TestClient(app)
@@ -72,7 +73,7 @@ def test_interests_serialization():
     resp = client.put("/seekers/me/profile", json={"interests": ["Dog", "Cat", "Dog"]})
     print("PUT /seekers/me/profile (interests serialization):", resp.json())
     data = resp.json()
-    assert set(data["interests"]) == {"Dog", "Cat", "Dog"}
+    assert set(data["interests"]) == {"Dog", "Cat"}
 
 def test_toggle_hidden_alias_and_get_profile_hidden():
     # Set hidden True again; test both PATCH endpoints if supported

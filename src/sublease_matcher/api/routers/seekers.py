@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import cast
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
@@ -9,7 +8,6 @@ from pydantic import BaseModel
 from ..adapters.memory_uow import InMemoryUnitOfWork
 from ..dependencies.uow import get_uow
 from ..interfaces.errors import NotFoundError, ValidationError
-from ..interfaces.types import SeekerDict
 from .dto import SeekerProfileDTO
 
 router = APIRouter(prefix="/seekers/me", tags=["seekers"])

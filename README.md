@@ -8,12 +8,24 @@ FastAPI HTTP surface for the Sublease Matcher platform. Provides in-memory adapt
 
 `SM_STORAGE` selects the backend (`memory` or `sqlalchemy`). `SM_DATABASE_URL` points at your Postgres instance; the Makefile defines `DB_DEV_URL` as the default local dev database (`sublease_dev_sql`).
 
-### Backend quickstart
+## Setup
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+cp .env.example .env        # optional; adjust if needed
+make install                # install API; optionally pip install -e ../sublease-matcher-backend-core
+make check                  # lint + typecheck
+```
+
+## Backend quickstart
 See `docs/db/README.md` for OS-specific Postgres setup and migration details.
 
+### In-memory (no Postgres)
+```bash
+make run-src
+curl -s http://127.0.0.1:8000/healthz
+```
 
-
-## SQL dev (Postgres)
+### SQL dev (Postgres)
 ```bash
 createdb sublease_dev_sql          # one-time creation
 make db-dev-reset-sql              # migrations + deterministic seed data
@@ -21,29 +33,6 @@ make run-sql                       # SQL-backed API (uses DB_DEV_URL)
 # Optional smoke:
 make db-dev-smoke-sql
 ```
-## Backend quickstart In-memory (no Postgres)
-1. Create a Python 3.12 virtual environment:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
-2. Copy environment defaults and adjust if necessary:
-   ```bash
-   cp .env.example .env
-   ```
-3. Install the API (and optionally the core package):
-   ```bash
-   make install
-   pip install -e ../sublease-matcher-backend-core
-   ```
-4. Run checks:
-   ```bash
-   make check
-   ```
-5. Start the server with the default in-memory backend:
-   ```bash
-   make run-src
-   ```
 
 ## Choosing a backend
 - Use `memory` (default) when hacking on endpoints or iterating quickly without Postgres.
