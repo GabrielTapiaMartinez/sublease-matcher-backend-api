@@ -12,8 +12,6 @@ from ..adapters.memory_repos import (
 )
 from ..adapters.memory_uow import InMemoryUnitOfWork
 from ..adapters.seed_data import build_seed
-from ..adapters.sqlalchemy.db import SessionLocal
-from ..adapters.sqlalchemy.uow import SqlAlchemyUnitOfWork
 from ..dependencies.settings import get_settings
 from ..interfaces.uow import UnitOfWork
 
@@ -32,6 +30,9 @@ def _build_memory_uow() -> InMemoryUnitOfWork:
 def get_uow() -> Iterator[UnitOfWork]:
     settings = get_settings()
     if settings.storage == "sqlalchemy":
+        from ..adapters.sqlalchemy.db import SessionLocal
+        from ..adapters.sqlalchemy.uow import SqlAlchemyUnitOfWork
+
         with SqlAlchemyUnitOfWork(SessionLocal) as uow:
             yield uow
     else:
