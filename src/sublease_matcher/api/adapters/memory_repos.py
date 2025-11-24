@@ -36,7 +36,10 @@ class InMemorySeekerRepo(SeekerRepo):
         return seeker
 
     def queue_for_host(self, host_id: str) -> Sequence[SeekerDict]:
-        return list(self._data.values())
+        return [
+            seeker for seeker in self._data.values()
+            if not seeker.get("hidden")
+        ]
 
 
 class InMemoryHostRepo(HostRepo):
