@@ -76,4 +76,16 @@ db-dev-smoke-sql:
 		SM_STORAGE=sqlalchemy \
 		PYTHONPATH=src python3 scripts/db/smoke_sql.py
 
+db-dev-smoke-sql-w:
+	@echo "--- Running DB Smoke Test (Windows) ---"
+	@echo "Note: Using default user 'postgres'. You will be prompted for the password."
+	@read -s -p "Enter Password for postgres: " PGPASSWORD; \
+	echo ""; \
+	SM_DATABASE_URL="postgresql+psycopg://postgres@localhost:5432/sublease_dev_sql" \
+		SM_STORAGE=sqlalchemy \
+		SM_JWT_SECRET="smoke-test-secret-key" \
+		SM_SECRET_KEY="another-secret-key" \
+		PGPASSWORD="$$PGPASSWORD" \
+		PYTHONPATH=src \
+		PYTHONPATH=src python scripts/db/smoke_sql_w.py
 smoke-sql: db-dev-smoke-sql
