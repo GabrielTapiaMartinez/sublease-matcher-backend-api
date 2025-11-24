@@ -10,6 +10,7 @@ from getpass import getuser
 from pathlib import Path
 
 DEFAULT_DB_NAME = "sublease_dev_sql"
+DEFAULT_PYTHONPATH = "src:../sublease-matcher-backend-core/src"
 
 
 def _log(message: str) -> None:
@@ -35,7 +36,7 @@ def _run(cmd: list[str], env: dict[str, str]) -> None:
 
 def main() -> None:
     env = os.environ.copy()
-    env.setdefault("PYTHONPATH", "src")
+    env["PYTHONPATH"] = env.get("PYTHONPATH", DEFAULT_PYTHONPATH)
     database_url = _ensure_database_url(env)
     _log(f"Using database URL: {database_url}")
     _log("Running Alembic migrations...")

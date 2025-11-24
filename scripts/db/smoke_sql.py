@@ -15,6 +15,7 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 DEFAULT_DB_NAME = "sublease_dev_sql"
+DEFAULT_PYTHONPATH = "src:../sublease-matcher-backend-core/src"
 
 
 def _default_database_url(env: dict[str, str]) -> str:
@@ -68,7 +69,7 @@ def main() -> None:
     database_url = _ensure_database_url(env)
     if not database_url:
         raise SystemExit("SM_DATABASE_URL must be set for smoke_sql.py")
-    env.setdefault("PYTHONPATH", "src")
+    env["PYTHONPATH"] = env.get("PYTHONPATH", DEFAULT_PYTHONPATH)
     env.setdefault("SM_STORAGE", "sqlalchemy")
     _log(f"Using database URL: {database_url}")
 

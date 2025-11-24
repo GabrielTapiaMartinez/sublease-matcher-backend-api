@@ -12,9 +12,24 @@ from contextlib import suppress
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-from sublease_matcher.api.adapters.seed_data import build_seed
-from sublease_matcher.api.adapters.sqlalchemy.db import SessionLocal
-from sublease_matcher.api.adapters.sqlalchemy.uow import SqlAlchemyUnitOfWork
+DEFAULT_PYTHONPATH = "src:../sublease-matcher-backend-core/src"
+
+
+def _ensure_pythonpath() -> None:
+    pythonpath = os.environ.get("PYTHONPATH")
+    if pythonpath:
+        return
+    os.environ["PYTHONPATH"] = DEFAULT_PYTHONPATH
+    for path in DEFAULT_PYTHONPATH.split(":"):
+        if path and path not in sys.path:
+            sys.path.insert(0, path)
+
+
+_ensure_pythonpath()
+
+from sublease_matcher.api.adapters.seed_data import build_seed  # noqa: E402
+from sublease_matcher.api.adapters.sqlalchemy.db import SessionLocal  # noqa: E402
+from sublease_matcher.api.adapters.sqlalchemy.uow import SqlAlchemyUnitOfWork  # noqa: E402
 
 
 def _run(cmd: list[str], env: dict[str, str]) -> None:
@@ -64,7 +79,7 @@ def main() -> None:
     database_url = env.get("SM_DATABASE_URL")
     if not database_url:
         raise SystemExit("SM_DATABASE_URL must be set for smoke_sql.py")
-    env.setdefault("PYTHONPATH", "src")
+    env["PYTHONPATH"] = env.get("PYTHONPATH", DEFAULT_PYTHONPATH)
     env.setdefault("SM_STORAGE", "sqlalchemy")
 
     print("Applying migrations...")
