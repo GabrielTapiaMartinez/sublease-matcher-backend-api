@@ -11,6 +11,12 @@ from ..dependencies.uow import get_uow
 from ..interfaces.errors import ConflictError, NotFoundError, ValidationError
 from ..interfaces.types import HostDict, ListingDict
 from .dto import HostListingDTO
+from sublease_matcher.core.errors import Validation
+from sublease_matcher.core.domain.listing import Listing
+from sublease_matcher.core.domain.enums import ListingStatus
+from sublease_matcher.core.domain.value_objects import Money
+from sublease_matcher.core.domain.roommate import RoommateProfile
+from sublease_matcher.core.domain.ids import ListingId, HostId, RoommateId
 
 router = APIRouter(prefix="/hosts/me", tags=["listings"])
 public_router = APIRouter(prefix="/listings", tags=["listings"])
@@ -69,26 +75,7 @@ def _ensure_listing_owner(
     return host
 
 
-def _validate_listing_payload(payload: MutableMapping[str, Any]) -> None:
-    state = payload.get("state")
-    if state:
-        normalized = state.upper()
-        if len(normalized) != 2 or not normalized.isalpha():
-            raise ValidationError("state must be a valid 2-letter code")
-        payload["state"] = normalized
-    elif state == "":
-        raise ValidationError("state must be a valid 2-letter code")
 
-    price = payload.get("price_per_month")
-    if price is not None and price < Decimal("0"):
-        raise ValidationError("pricePerMonth cannot be negative")
-
-    status = payload.get("status") or "DRAFT"
-    if status == "PUBLISHED":
-        required = ["title", "city", "state"]
-        missing = [field for field in required if not payload.get(field)]
-        if missing:
-            raise ValidationError("title, city, and state are required before publishing")
 
 
 def _persist_listing_from_dto(
@@ -101,13 +88,7 @@ def _persist_listing_from_dto(
     allow_create_host: bool,
 ) -> HostListingDTO:
     fields_set = set(dto.model_fields_set)
-    dto_copy = (
-        dto.model_copy(
-            update={"pricePerMonth": _clamp_non_negative(dto.pricePerMonth)},
-        )
-        if "pricePerMonth" in fields_set
-        else dto
-    )
+    dto_copy = dto
 
     host_record = existing_host or uow.hosts.get_by_user(user_id)
     if host_record is None and not allow_create_host:
@@ -152,19 +133,57 @@ def _persist_listing_from_dto(
 
     listing_payload = _merge_dicts(base_listing, listing_updates, allow_none=True)
     listing_payload["host_id"] = host["id"]
-    listing_payload["price_per_month"] = _clamp_non_negative(
-        cast(Decimal | None, listing_payload.get("price_per_month"))
-    )
+    listing_payload["price_per_month"] = listing_payload.get("price_per_month")
     state_value = listing_payload.get("state")
     if isinstance(state_value, str):
         listing_payload["state"] = state_value.upper()
-    if "roommates" not in listing_payload:
-        existing_roommates = base_listing.get("roommates", []) if base_listing is not None else []
-        listing_payload["roommates"] = existing_roommates
-    _validate_listing_payload(cast(MutableMapping[str, Any], listing_payload))
 
-    listing = uow.listings.upsert(cast(ListingDict, listing_payload))
-    return HostListingDTO.from_parts(host, listing)
+    # Validate via Core Entity
+    try:
+        # Map roommates
+        roommates_data = listing_payload.get("roommates", [])
+        roommates = []
+        for r in roommates_data:
+            roommates.append(RoommateProfile(
+                id=RoommateId(r.get("id") or "temp-id"),
+                name=r.get("name") or "Unknown",
+                sleeping_habits=r.get("sleepingHabits"),
+                gender=None,
+                pronouns=r.get("pronouns"),
+                interests=tuple(r.get("interests", [])),
+                major_minor=None
+            ))
+
+        # Map Money
+        price_val = listing_payload.get("price_per_month")
+        price = Money(Decimal(str(price_val))) if price_val is not None else None
+
+        Listing(
+            id=ListingId(listing_payload.get("id") or "temp-id"),
+            host_id=HostId(listing_payload.get("host_id") or "temp-host-id"),
+            title=listing_payload.get("title") or "",
+            price_per_month=price,
+            city=listing_payload.get("city") or "",
+            state=listing_payload.get("state") or "",
+            available_from=listing_payload.get("available_from"),
+            available_to=listing_payload.get("available_to"),
+            status=ListingStatus(listing_payload.get("status") or "DRAFT"),
+            contact_email=listing_payload.get("contact_email"),
+            bio=listing_payload.get("bio"),
+            roommates=tuple(roommates),
+            roommates_count=len(roommates)
+        )
+    except Validation as e:
+        raise ValidationError(str(e)) from e
+    except ValueError as e:
+        # Catch value errors from Money, Enums etc
+        raise ValidationError(str(e)) from e
+
+    try:
+        listing = uow.listings.upsert(cast(ListingDict, listing_payload))
+        return HostListingDTO.from_parts(host, listing)
+    except Validation as e:
+        raise ValidationError(str(e)) from e
 
 
 @router.get("/listing", response_model=HostListingDTO)
@@ -278,7 +297,49 @@ def toggle_listing_publication(
     else:
         next_status = "PUBLISHED"
     listing["status"] = next_status
-    listing["price_per_month"] = _clamp_non_negative(listing.get("price_per_month"))
-    _validate_listing_payload(cast(MutableMapping[str, Any], listing))
-    updated_listing = uow.listings.upsert(listing)
-    return HostListingDTO.from_parts(host, updated_listing)
+
+    # Validate via Core Entity
+    try:
+        # Map roommates
+        roommates_data = listing.get("roommates", [])
+        roommates = []
+        for r in roommates_data:
+            roommates.append(RoommateProfile(
+                id=RoommateId(r.get("id") or "temp-id"),
+                name=r.get("name") or "Unknown",
+                sleeping_habits=r.get("sleepingHabits"),
+                gender=None,
+                pronouns=r.get("pronouns"),
+                interests=tuple(r.get("interests", [])),
+                major_minor=None
+            ))
+
+        # Map Money
+        price_val = listing.get("price_per_month")
+        price = Money(Decimal(str(price_val))) if price_val is not None else None
+
+        Listing(
+            id=ListingId(listing.get("id") or "temp-id"),
+            host_id=HostId(listing.get("host_id") or "temp-host-id"),
+            title=listing.get("title") or "",
+            price_per_month=price,
+            city=listing.get("city") or "",
+            state=listing.get("state") or "",
+            available_from=listing.get("available_from"),
+            available_to=listing.get("available_to"),
+            status=ListingStatus(listing.get("status") or "DRAFT"),
+            contact_email=listing.get("contact_email"),
+            bio=listing.get("bio"),
+            roommates=tuple(roommates),
+            roommates_count=len(roommates)
+        )
+    except Validation as e:
+        raise ValidationError(str(e)) from e
+    except ValueError as e:
+        raise ValidationError(str(e)) from e
+
+    try:
+        updated_listing = uow.listings.upsert(listing)
+        return HostListingDTO.from_parts(host, updated_listing)
+    except Validation as e:
+        raise ValidationError(str(e)) from e
