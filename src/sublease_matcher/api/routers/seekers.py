@@ -5,7 +5,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
-from ..adapters.memory_uow import InMemoryUnitOfWork
+from ..interfaces.uow import UnitOfWork
 from ..dependencies.uow import get_uow
 from ..interfaces.errors import NotFoundError, ValidationError
 from .dto import SeekerProfileDTO
@@ -15,7 +15,7 @@ from sublease_matcher.core.domain.value_objects import Money, validate_availabil
 router = APIRouter(prefix="/seekers/me", tags=["seekers"])
 profiles_router = APIRouter(prefix="/profiles", tags=["seekers"])
 
-def _reset_inmemory_uow(uow: InMemoryUnitOfWork):
+def _reset_inmemory_uow(uow: UnitOfWork):
     if hasattr(uow.seekers, "clear"):
         uow.seekers.clear()
     elif hasattr(uow, "clear"):
@@ -44,14 +44,14 @@ def _clamp_non_negative(value: Decimal | None) -> Decimal | None:
         return None
     return value if value >= Decimal("0") else Decimal("0")
 
-def _read_profile(uow: InMemoryUnitOfWork, user_id: str) -> SeekerProfileDTO:
+def _read_profile(uow: UnitOfWork, user_id: str) -> SeekerProfileDTO:
     seeker = uow.seekers.get_by_user(user_id)
     if seeker is None:
         return SeekerProfileDTO(userId=user_id, hidden=False)
     return safe_profile_from_dict(seeker)
 
 def _upsert_profile(
-    profile: SeekerProfileDTO, uow: InMemoryUnitOfWork, user_id: str
+    profile: SeekerProfileDTO, uow: UnitOfWork, user_id: str
 ) -> SeekerProfileDTO:
     fields_set = profile.model_fields_set
 
@@ -108,7 +108,7 @@ def _upsert_profile(
     saved = uow.seekers.upsert(payload)
     return safe_profile_from_dict(saved)
 
-def _toggle_hidden(hidden: bool, uow: InMemoryUnitOfWork, user_id: str) -> bool:
+def _toggle_hidden(hidden: bool, uow: UnitOfWork, user_id: str) -> bool:
     seeker = uow.seekers.get_by_user(user_id)
     if seeker is None or not seeker.get("id"):
         raise NotFoundError("Seeker profile not found")
@@ -118,7 +118,7 @@ def _toggle_hidden(hidden: bool, uow: InMemoryUnitOfWork, user_id: str) -> bool:
 
 @router.get("/profile", response_model=SeekerProfileDTO)
 def read_profile(
-    uow: InMemoryUnitOfWork = Depends(get_uow),
+    uow: UnitOfWork = Depends(get_uow),
     user_id: str = Depends(get_current_user_id),
 ) -> SeekerProfileDTO:
     return _read_profile(uow, user_id)
@@ -126,7 +126,7 @@ def read_profile(
 @router.put("/profile", response_model=SeekerProfileDTO)
 def upsert_profile(
     profile: SeekerProfileDTO,
-    uow: InMemoryUnitOfWork = Depends(get_uow),
+    uow: UnitOfWork = Depends(get_uow),
     user_id: str = Depends(get_current_user_id),
 ) -> SeekerProfileDTO:
     return _upsert_profile(profile, uow, user_id)
@@ -139,7 +139,7 @@ class HideResponse(BaseModel):
 
 @profiles_router.get("/me", response_model=SeekerProfileDTO)
 def read_profile_alias(
-    uow: InMemoryUnitOfWork = Depends(get_uow),
+    uow: UnitOfWork = Depends(get_uow),
     user_id: str = Depends(get_current_user_id),
 ) -> SeekerProfileDTO:
     return _read_profile(uow, user_id)
@@ -147,7 +147,7 @@ def read_profile_alias(
 @profiles_router.put("/me", response_model=SeekerProfileDTO)
 def upsert_profile_alias(
     profile: SeekerProfileDTO,
-    uow: InMemoryUnitOfWork = Depends(get_uow),
+    uow: UnitOfWork = Depends(get_uow),
     user_id: str = Depends(get_current_user_id),
 ) -> SeekerProfileDTO:
     return _upsert_profile(profile, uow, user_id)
@@ -155,7 +155,7 @@ def upsert_profile_alias(
 @profiles_router.patch("/hide", response_model=HideResponse)
 def toggle_profile_hidden(
     payload: HideToggle,
-    uow: InMemoryUnitOfWork = Depends(get_uow),
+    uow: UnitOfWork = Depends(get_uow),
     user_id: str = Depends(get_current_user_id),
 ) -> HideResponse:
     hidden = _toggle_hidden(payload.hidden, uow, user_id)

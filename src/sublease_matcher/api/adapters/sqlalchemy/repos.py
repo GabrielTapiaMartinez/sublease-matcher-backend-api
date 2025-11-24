@@ -108,7 +108,7 @@ class SqlAlchemySeekerRepo(SeekerRepo):
         return self._to_dict(db_obj)
 
     def queue_for_host(self, host_id: str) -> Sequence[SeekerDict]:
-        stmt = select(models.SeekerProfile)
+        stmt = select(models.SeekerProfile).where(models.SeekerProfile.visible == True)  # noqa: E712
         seekers = self.session.scalars(stmt).all()
         return [self._to_dict(seeker) for seeker in seekers]
 

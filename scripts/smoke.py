@@ -66,7 +66,7 @@ def main():
         ),
         (
             "Hide Seeker Profile",
-            f'curl -s -f -X PATCH {BASE_URL}/profiles/hide -H "X-Debug-User-Id: {SEEKER_ID}"',
+            f'curl -s -f -X PATCH {BASE_URL}/profiles/hide -H "X-Debug-User-Id: {SEEKER_ID}" -H "Content-Type: application/json" -d \'{{"hidden": true}}\'',
             False,
         ),
         # Host Listing
