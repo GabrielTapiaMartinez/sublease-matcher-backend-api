@@ -5,10 +5,10 @@ Run Alembic commands against a Postgres database URL supplied via `SM_DATABASE_U
 ```bash
 export DB_DEV_URL="postgresql+psycopg://$USER@localhost:5432/sublease_dev_sql"
 export SM_DATABASE_URL="$DB_DEV_URL"
-PYTHONPATH=src SM_DATABASE_URL="$DB_DEV_URL" python3 -m alembic current
-PYTHONPATH=src SM_DATABASE_URL="$DB_DEV_URL" python3 -m alembic upgrade head
-PYTHONPATH=src SM_DATABASE_URL="$DB_DEV_URL" python3 -m alembic downgrade -1
-PYTHONPATH=src SM_DATABASE_URL="$DB_DEV_URL" python3 -m alembic revision --autogenerate -m "message"
+PYTHONPATH=src:../sublease-matcher-backend-core/src SM_DATABASE_URL="$DB_DEV_URL" python3 -m alembic current
+PYTHONPATH=src:../sublease-matcher-backend-core/src SM_DATABASE_URL="$DB_DEV_URL" python3 -m alembic upgrade head
+PYTHONPATH=src:../sublease-matcher-backend-core/src SM_DATABASE_URL="$DB_DEV_URL" python3 -m alembic downgrade -1
+PYTHONPATH=src:../sublease-matcher-backend-core/src SM_DATABASE_URL="$DB_DEV_URL" python3 -m alembic revision --autogenerate -m "message"
 ```
 
 or use the Make targets:

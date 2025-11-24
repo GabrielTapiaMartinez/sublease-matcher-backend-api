@@ -2,6 +2,7 @@
 
 PY := python3
 DB_DEV_URL ?= postgresql+psycopg://$$(whoami)@localhost:5432/sublease_dev_sql
+PYTHONPATH_DEV := src:../sublease-matcher-backend-core/src
 
 install:
 	$(PY) -m pip install -e .
@@ -15,10 +16,12 @@ run:
 	uvicorn sublease_matcher.api.main:app --reload
 
 run-src:
-	uvicorn --app-dir src sublease_matcher.api.main:app --reload
+	PYTHONPATH=$(PYTHONPATH_DEV) \
+		uvicorn --app-dir src sublease_matcher.api.main:app --reload
 
 run-sql:
-	SM_DATABASE_URL="$(DB_DEV_URL)" \
+	PYTHONPATH=$(PYTHONPATH_DEV) \
+		SM_DATABASE_URL="$(DB_DEV_URL)" \
 		SM_STORAGE=sqlalchemy \
 		uvicorn --app-dir src sublease_matcher.api.main:app --reload
 
@@ -53,28 +56,28 @@ clean:
 
 db-create-dev:
 	SM_DATABASE_URL="$(DB_DEV_URL)" \
-		PYTHONPATH=src python3 scripts/db/create_db_from_models.py
+		PYTHONPATH=$(PYTHONPATH_DEV) python3 scripts/db/create_db_from_models.py
 
 db-upgrade:
 	SM_DATABASE_URL="$(DB_DEV_URL)" \
-		PYTHONPATH=src alembic upgrade head
+		PYTHONPATH=$(PYTHONPATH_DEV) alembic upgrade head
 
 db-downgrade:
 	SM_DATABASE_URL="$(DB_DEV_URL)" \
-		PYTHONPATH=src alembic downgrade -1
+		PYTHONPATH=$(PYTHONPATH_DEV) alembic downgrade -1
 
 db-rev:
 	SM_DATABASE_URL="$(DB_DEV_URL)" \
-		PYTHONPATH=src alembic revision --autogenerate -m "$$(MSG)"
+		PYTHONPATH=$(PYTHONPATH_DEV) alembic revision --autogenerate -m "$$(MSG)"
 
 db-dev-reset-sql:
 	SM_DATABASE_URL="$(DB_DEV_URL)" \
-		PYTHONPATH=src python3 scripts/db/reset_and_seed_dev.py
+		PYTHONPATH=$(PYTHONPATH_DEV) python3 scripts/db/reset_and_seed_dev.py
 
 db-dev-smoke-sql:
 	SM_DATABASE_URL="$(DB_DEV_URL)" \
 		SM_STORAGE=sqlalchemy \
-		PYTHONPATH=src python3 scripts/db/smoke_sql.py
+		PYTHONPATH=$(PYTHONPATH_DEV) python3 scripts/db/smoke_sql.py
 
 db-dev-smoke-sql-w:
 	@echo "--- Running DB Smoke Test (Windows) ---"
@@ -86,6 +89,6 @@ db-dev-smoke-sql-w:
 		SM_JWT_SECRET="smoke-test-secret-key" \
 		SM_SECRET_KEY="another-secret-key" \
 		PGPASSWORD="$$PGPASSWORD" \
-		PYTHONPATH=src \
-		PYTHONPATH=src python scripts/db/smoke_sql_w.py
+		PYTHONPATH=$(PYTHONPATH_DEV) \
+		PYTHONPATH=$(PYTHONPATH_DEV) python scripts/db/smoke_sql_w.py
 smoke-sql: db-dev-smoke-sql

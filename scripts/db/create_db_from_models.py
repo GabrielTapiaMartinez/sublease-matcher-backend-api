@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 import os
+import sys
 from getpass import getuser
 
 DEFAULT_DB_NAME = "sublease_dev_sql"
+DEFAULT_PYTHONPATH = "src:../sublease-matcher-backend-core/src"
 
 
 def _default_database_url() -> str:
@@ -23,6 +25,17 @@ def _ensure_database_url() -> str:
     return database_url
 
 
+def _ensure_pythonpath() -> None:
+    pythonpath = os.environ.get("PYTHONPATH")
+    if pythonpath:
+        return
+    os.environ["PYTHONPATH"] = DEFAULT_PYTHONPATH
+    for path in DEFAULT_PYTHONPATH.split(":"):
+        if path and path not in sys.path:
+            sys.path.insert(0, path)
+
+
+_ensure_pythonpath()
 _ensure_database_url()
 
 from sublease_matcher.api.adapters.sqlalchemy import models

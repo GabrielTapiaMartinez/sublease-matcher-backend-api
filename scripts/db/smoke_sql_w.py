@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
-import signal
+
+# Import platform to check the operating system
+import platform
 import subprocess
 import sys
 import time
@@ -12,12 +14,12 @@ from getpass import getuser
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
-# Import platform to check the operating system
-import platform
 
 DEFAULT_DB_NAME = "sublease_dev_sql"
+DEFAULT_PYTHONPATH = "src:../sublease-matcher-backend-core/src"
 
 # --- Helper Functions ---
+
 
 def _default_database_url(env: dict[str, str]) -> str:
     # Use 'USERNAME' on Windows, or fallback to 'USER' or getuser()
@@ -25,7 +27,7 @@ def _default_database_url(env: dict[str, str]) -> str:
         user = env.get("USERNAME") or getuser()
     else:
         user = env.get("USER") or getuser()
-        
+
     # Note: postgresql may need explicit configuration on Windows if run as a system service.
     # This URL format remains standard.
     return f"postgresql+psycopg://{user}@localhost:5432/{DEFAULT_DB_NAME}"
@@ -47,7 +49,7 @@ def _run(cmd: list[str], env: dict[str, str]) -> None:
     # Use 'python' instead of 'python3' for better Windows compatibility
     if cmd and cmd[0] == "python3":
         cmd[0] = "python"
-        
+
     # On Windows, need shell=True for some commands like 'alembic' if not in PATH
     # However, for simple python calls, it's usually better to avoid shell=True
     # unless necessary for command line arguments or pathing. We'll keep it simple here.
@@ -78,19 +80,20 @@ def seed_demo_data(env: dict[str, str]) -> None:
     script_dir = Path(__file__).resolve().parent
     seed_script = script_dir / "seed_sql.py"
     _log("Seeding deterministic SQL data...")
-    
+
     # Use 'python' for compatibility
     _run([sys.executable, str(seed_script)], env=env)
 
 
 # --- Main Logic ---
 
+
 def main() -> None:
     env = os.environ.copy()
     database_url = _ensure_database_url(env)
     if not database_url:
         raise SystemExit("SM_DATABASE_URL must be set for smoke_sql.py")
-    env.setdefault("PYTHONPATH", "src")
+    env["PYTHONPATH"] = env.get("PYTHONPATH", DEFAULT_PYTHONPATH)
     env.setdefault("SM_STORAGE", "sqlalchemy")
     _log(f"Using database URL: {database_url}")
 
@@ -107,10 +110,11 @@ def main() -> None:
         "src",
         "sublease_matcher.api.main:app",
         "--reload",
-        "--port", "8001",
+        "--port",
+        "8001",
     ]
     _log("Starting API server (SQL backend)...")
-    
+
     # Use cross-platform process handling: set start_new_session=True for
     # better process group management, which helps with clean termination.
     proc = subprocess.Popen(  # noqa: S603
@@ -119,9 +123,9 @@ def main() -> None:
         # Force output to the current process's stdout/stderr streams
         stdout=sys.stdout,
         stderr=sys.stderr,
-        start_new_session=True, 
+        start_new_session=True,
     )
-    
+
     try:
         _wait_for_server()
         _log("Server is up. Running smoke requests...")
@@ -133,12 +137,12 @@ def main() -> None:
         _log("listings mine OK")
     finally:
         _log("Stopping API server...")
-        
+
         # Windows-compatible shutdown logic:
         # 1. Try to terminate gracefully (SIGTERM equivalent)
         with suppress(OSError):
             proc.terminate()
-        
+
         # 2. Wait for it to close
         try:
             proc.wait(timeout=10)
@@ -147,7 +151,7 @@ def main() -> None:
             _log("Server did not stop gracefully, forcing kill...")
             with suppress(OSError):
                 proc.kill()
-            
+
             # 4. Wait again for final cleanup
             proc.wait(timeout=5)
 

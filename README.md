@@ -2,6 +2,15 @@
 
 FastAPI HTTP surface for the Sublease Matcher platform. Provides in-memory adapters, typed DTOs, and health/debug utilities so the frontend team can iterate quickly.
 
+## Repository Layout Requirement
+To run the backend successfully, backend-core and backend-api must be placed as sibling directories:
+```
+<root>/
+  sublease-matcher-backend-core/
+  sublease-matcher-backend-api/
+```
+The Makefile sets `PYTHONPATH_DEV := src:../sublease-matcher-backend-core/src`, which requires both repos to sit next to each other in the same parent folder. If they are not siblings, imports such as `sublease_matcher.core` will fail.
+
 ## Storage modes
 - `memory` (default): in-memory storage, great for quick smoke tests; no Postgres required.
 - `sqlalchemy`: Postgres-backed storage using SQLAlchemy, Alembic migrations, and the SQL unit of work.
