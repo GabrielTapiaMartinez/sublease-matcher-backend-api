@@ -46,15 +46,7 @@ class SeekerProfileDTO(BaseModel):
         },
     )
 
-    @model_validator(mode="after")
-    def validate_ranges(self) -> SeekerProfileDTO:
-        if self.available_from and self.available_to:
-            if self.available_from > self.available_to:
-                raise ValueError("available_from must be before or equal to available_to")
-        if self.budgetMin is not None and self.budgetMax is not None:
-            if self.budgetMin > self.budgetMax:
-                raise ValueError("budgetMin must be less than or equal to budgetMax")
-        return self
+
 
     def to_dict(self) -> dict[str, Any]:
         interests_csv = ",".join(self.interests)
@@ -204,6 +196,23 @@ class HostListingDTO(BaseModel):
             "status": self.status,
             "roommates": [roommate.model_dump(exclude_none=True) for roommate in self.roommates],
         }
+
+    def dto_to_update_cmd(user_id: str, dto: SeekerProfileDTO) -> UpdateSeekerCmd:
+        # _SENTINEL imported from models.py
+        return UpdateSeekerCmd(
+            user_id=user_id,
+            bio=dto.bio if dto.bio is not None else _SENTINEL,
+            term=_SENTINEL,  # set appropriately if present on DTO
+            term_year=_SENTINEL, # same here
+            budget_min=dto.budgetMin if dto.budgetMin is not None else _SENTINEL,
+            budget_max=dto.budgetMax if dto.budgetMax is not None else _SENTINEL,
+            city=dto.city if dto.city is not None else _SENTINEL,
+            interests=tuple(dto.interests) if dto.interests else _SENTINEL,
+            contact_email=dto.contactEmail if dto.contactEmail is not None else _SENTINEL,
+            hidden=dto.hidden if dto.hidden is not None else _SENTINEL
+        )
+
+
 # RoommatePublicDTO and HostListingDTO stay as they are unless you also need to update their fields.
 
     @classmethod

@@ -9,6 +9,8 @@ from ..adapters.memory_uow import InMemoryUnitOfWork
 from ..dependencies.uow import get_uow
 from ..interfaces.errors import NotFoundError, ValidationError
 from .dto import SeekerProfileDTO
+from sublease_matcher.core.errors import Validation
+from sublease_matcher.core.domain.value_objects import Money, validate_availability_dates, validate_email
 
 router = APIRouter(prefix="/seekers/me", tags=["seekers"])
 profiles_router = APIRouter(prefix="/profiles", tags=["seekers"])
@@ -57,14 +59,21 @@ def _upsert_profile(
     has_from = "available_from" in fields_set and profile.available_from is not None
     has_to = "available_to" in fields_set and profile.available_to is not None
     if has_from and has_to:
-        if profile.available_from > profile.available_to:
-            raise ValidationError("available_from must be before or equal to available_to")
+        try:
+            validate_availability_dates(profile.available_from, profile.available_to)
+        except ValueError as e:
+            raise ValidationError(str(e)) from e
 
     # Budget validation
     if ("budgetMin" in fields_set and profile.budgetMin is not None) and \
        ("budgetMax" in fields_set and profile.budgetMax is not None):
-        if profile.budgetMin > profile.budgetMax:
-            raise ValidationError("budgetMin must be less than or equal to budgetMax")
+        try:
+            min_money = Money(profile.budgetMin)
+            max_money = Money(profile.budgetMax)
+            if min_money.amount > max_money.amount:
+                raise ValidationError("budget_min cannot exceed budget_max.")
+        except ValueError as e:
+            raise ValidationError(str(e)) from e
 
     # Make sure we persist/update the same profile ID for the user
     existing = uow.seekers.get_by_user(user_id) or {}
@@ -84,9 +93,9 @@ def _upsert_profile(
     if "available_to" in fields_set:
         payload["available_to"] = profile.available_to
     if "budgetMin" in fields_set:
-        payload["budget_min"] = _clamp_non_negative(profile.budgetMin)
+        payload["budget_min"] = profile.budgetMin
     if "budgetMax" in fields_set:
-        payload["budget_max"] = _clamp_non_negative(profile.budgetMax)
+        payload["budget_max"] = profile.budgetMax
     if "city" in fields_set:
         payload["city"] = profile.city
     if "interests" in fields_set:
