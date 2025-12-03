@@ -55,8 +55,6 @@ class ListingQueueItem(BaseModel):
 class SeekerQueueItem(BaseModel):
     id: str
     bio: str | None = None
-    term: str | None = None
-    termYear: int | None = None
     budgetMin: Decimal | None = None
     budgetMax: Decimal | None = None
     city: str | None = None
@@ -116,8 +114,6 @@ def _to_seeker_queue_item(seeker: SeekerDict) -> SeekerQueueItem:
     return SeekerQueueItem(
         id=seeker.get("id", ""),
         bio=seeker.get("bio"),
-        term=seeker.get("term"),
-        termYear=seeker.get("term_year"),
         budgetMin=seeker.get("budget_min"),
         budgetMax=seeker.get("budget_max"),
         city=seeker.get("city"),
