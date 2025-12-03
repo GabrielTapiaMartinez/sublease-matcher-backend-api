@@ -202,8 +202,8 @@ class HostListingDTO(BaseModel):
         return UpdateSeekerCmd(
             user_id=user_id,
             bio=dto.bio if dto.bio is not None else _SENTINEL,
-            term=_SENTINEL,  # set appropriately if present on DTO
-            term_year=_SENTINEL, # same here
+            available_from=_SENTINEL,  # set appropriately if present on DTO
+            available_to=_SENTINEL, # same here
             budget_min=dto.budgetMin if dto.budgetMin is not None else _SENTINEL,
             budget_max=dto.budgetMax if dto.budgetMax is not None else _SENTINEL,
             city=dto.city if dto.city is not None else _SENTINEL,
