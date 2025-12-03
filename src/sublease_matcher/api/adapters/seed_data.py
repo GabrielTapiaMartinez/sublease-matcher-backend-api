@@ -23,6 +23,8 @@ def build_seed() -> tuple[
             "city": "Eau Claire",
             "interests_csv": "coding,swimming,reading",
             "contact_email": "s1@example.edu",
+            "available_from": date(2025, 8, 15),
+            "available_to": date(2025, 12, 31),
         },
         "seeker-2": {
             "id": "seeker-2",
@@ -35,6 +37,8 @@ def build_seed() -> tuple[
             "city": "Eau Claire",
             "interests_csv": "hiking,cinema",
             "contact_email": "s2@example.edu",
+            "available_from": date(2025, 1, 1),
+            "available_to": date(2025, 5, 31),
         },
     }
     hosts: dict[str, HostDict] = {

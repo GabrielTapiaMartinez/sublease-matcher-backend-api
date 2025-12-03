@@ -48,6 +48,8 @@ class ListingQueueItem(BaseModel):
     state: str | None = None
     pricePerMonth: Decimal | None = None
     status: Literal["DRAFT", "PUBLISHED", "UNLISTED"] | None = None
+    availableFrom: str | None = None
+    availableTo: str | None = None
 
 
 class SeekerQueueItem(BaseModel):
@@ -58,6 +60,8 @@ class SeekerQueueItem(BaseModel):
     budgetMin: Decimal | None = None
     budgetMax: Decimal | None = None
     city: str | None = None
+    available_from: str | None = None
+    available_to: str | None = None
 
 
 class SwipeOut(BaseModel):
@@ -92,6 +96,8 @@ def _has_like(swipes: InMemorySwipeRepo, *, user_id: str, target_id: str) -> boo
 
 
 def _to_listing_queue_item(listing: ListingDict) -> ListingQueueItem:
+    available_from = listing.get("available_from")
+    available_to = listing.get("available_to")
     return ListingQueueItem(
         id=listing.get("id", ""),
         title=listing.get("title"),
@@ -99,10 +105,14 @@ def _to_listing_queue_item(listing: ListingDict) -> ListingQueueItem:
         state=listing.get("state"),
         pricePerMonth=listing.get("price_per_month"),
         status=listing.get("status"),
+        availableFrom=str(available_from) if available_from else None,
+        availableTo=str(available_to) if available_to else None,
     )
 
 
 def _to_seeker_queue_item(seeker: SeekerDict) -> SeekerQueueItem:
+    available_from = seeker.get("available_from")
+    available_to = seeker.get("available_to")
     return SeekerQueueItem(
         id=seeker.get("id", ""),
         bio=seeker.get("bio"),
@@ -111,6 +121,8 @@ def _to_seeker_queue_item(seeker: SeekerDict) -> SeekerQueueItem:
         budgetMin=seeker.get("budget_min"),
         budgetMax=seeker.get("budget_max"),
         city=seeker.get("city"),
+        available_from=str(available_from) if available_from else None,
+        available_to=str(available_to) if available_to else None,
     )
 
 
