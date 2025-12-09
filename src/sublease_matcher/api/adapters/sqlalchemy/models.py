@@ -42,14 +42,7 @@ role_t = PGEnum(
     metadata=Base.metadata,
     create_type=True,
 )
-term_t = PGEnum(
-    "Fall",
-    "Spring",
-    "Summer",
-    name="term_t",
-    metadata=Base.metadata,
-    create_type=True,
-)
+
 
 
 class User(Base):
@@ -88,8 +81,8 @@ class SeekerProfile(Base):
     __table_args__ = (
         UniqueConstraint("user_id", name="uq_seeker_profiles_user_id"),
         CheckConstraint(
-            "need_to IS NULL OR need_to >= need_from",
-            name="ck_seeker_need_dates",
+            "available_to IS NULL OR available_to >= available_from",
+            name="ck_seeker_available_dates",
         ),
     )
 
@@ -105,8 +98,7 @@ class SeekerProfile(Base):
         server_default=sa.text("TRUE"),
     )
     bio: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    term: Mapped[str | None] = mapped_column(term_t, nullable=True)
-    term_year: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
+
     budget_min: Mapped[Decimal | None] = mapped_column(
         sa.Numeric(10, 2),
         nullable=True,
@@ -118,8 +110,8 @@ class SeekerProfile(Base):
     city: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     interests_csv: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     contact_email: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    need_from: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
-    need_to: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
+    available_from: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
+    available_to: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
 
     user: Mapped[User] = relationship("User", back_populates="seeker_profile")
     photos: Mapped[list[SeekerPhoto]] = relationship(

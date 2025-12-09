@@ -55,8 +55,8 @@ class SqlAlchemySeekerRepo(SeekerRepo):
             "id": seeker.id,
             "user_id": seeker.user_id,
             "bio": seeker.bio,
-            "term": seeker.term,
-            "term_year": seeker.term_year,
+            "available_from": seeker.available_from,
+            "available_to": seeker.available_to,
             "budget_min": seeker.budget_min,
             "budget_max": seeker.budget_max,
             "city": seeker.city,
@@ -89,8 +89,8 @@ class SqlAlchemySeekerRepo(SeekerRepo):
             db_obj.user_id = incoming_user_id
         for field in (
             "bio",
-            "term",
-            "term_year",
+            "available_from",
+            "available_to",
             "budget_min",
             "budget_max",
             "city",

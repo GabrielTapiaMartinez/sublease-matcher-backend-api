@@ -22,7 +22,6 @@ decision_t = postgresql.ENUM("LIKE", "PASS", name="decision_t")
 listing_status_t = postgresql.ENUM("DRAFT", "PUBLISHED", "UNLISTED", name="listing_status_t")
 match_status_t = postgresql.ENUM("PENDING", "MUTUAL", name="match_status_t")
 role_t = postgresql.ENUM("SEEKER", "HOST", name="role_t")
-term_t = postgresql.ENUM("Fall", "Spring", "Summer", name="term_t")
 
 
 def _enum(enum_type: postgresql.ENUM) -> postgresql.ENUM:
@@ -35,7 +34,7 @@ def _enum(enum_type: postgresql.ENUM) -> postgresql.ENUM:
 def upgrade() -> None:
     """Upgrade schema."""
     bind = op.get_bind()
-    for enum in (decision_t, listing_status_t, match_status_t, role_t, term_t):
+    for enum in (decision_t, listing_status_t, match_status_t, role_t):
         enum.create(bind=bind, checkfirst=True)
 
     op.create_table(
@@ -73,16 +72,14 @@ def upgrade() -> None:
         sa.Column("user_id", sa.String(length=64), nullable=False),
         sa.Column("visible", sa.Boolean(), server_default=sa.text("TRUE"), nullable=False),
         sa.Column("bio", sa.Text(), nullable=True),
-        sa.Column("term", _enum(term_t), nullable=True),
-        sa.Column("term_year", sa.Integer(), nullable=True),
         sa.Column("budget_min", sa.Numeric(precision=10, scale=2), nullable=True),
         sa.Column("budget_max", sa.Numeric(precision=10, scale=2), nullable=True),
         sa.Column("city", sa.Text(), nullable=True),
         sa.Column("interests_csv", sa.Text(), nullable=True),
         sa.Column("contact_email", sa.Text(), nullable=True),
-        sa.Column("need_from", sa.Date(), nullable=True),
-        sa.Column("need_to", sa.Date(), nullable=True),
-        sa.CheckConstraint("need_to IS NULL OR need_to >= need_from", name="ck_seeker_need_dates"),
+        sa.Column("available_from", sa.Date(), nullable=True),
+        sa.Column("available_to", sa.Date(), nullable=True),
+        sa.CheckConstraint("available_to IS NULL OR available_to >= available_from", name="ck_seeker_available_dates"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("user_id", name="uq_seeker_profiles_user_id"),
@@ -208,5 +205,5 @@ def downgrade() -> None:
     op.drop_table("seeker_profiles")
     op.drop_table("host_profiles")
     op.drop_table("users")
-    for enum in (decision_t, listing_status_t, match_status_t, role_t, term_t):
+    for enum in (decision_t, listing_status_t, match_status_t, role_t):
         enum.drop(bind=bind, checkfirst=True)

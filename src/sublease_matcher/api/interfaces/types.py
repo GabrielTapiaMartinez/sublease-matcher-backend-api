@@ -9,8 +9,8 @@ class SeekerDict(TypedDict, total=False):
     id: str
     user_id: str
     bio: str | None
-    term: str | None
-    term_year: int | None
+    available_from: date | None
+    available_to: date | None
     budget_min: Decimal | None
     budget_max: Decimal | None
     city: str | None
