@@ -103,6 +103,8 @@ def main() -> None:
         _log("seekers profile OK")
         _http_get("/listings/mine", headers={"X-Debug-User-Id": "user-10"})
         _log("listings mine OK")
+        _http_get("/matches", headers={"X-Debug-User-Id": "user-10"})
+        _log("matches OK")
     finally:
         _log("Stopping API server...")
         with suppress(ProcessLookupError):
