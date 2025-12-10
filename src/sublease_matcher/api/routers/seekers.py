@@ -46,7 +46,7 @@ def _clamp_non_negative(value: Decimal | None) -> Decimal | None:
 def _read_profile(uow: UnitOfWork, user_id: str) -> SeekerProfileDTO:
     seeker = uow.seekers.get_by_user(user_id)
     if seeker is None:
-        return SeekerProfileDTO(userId=user_id, hidden=False)
+        raise NotFoundError("Seeker profile not found")
     return safe_profile_from_dict(seeker)
 
 def _upsert_profile(
