@@ -116,6 +116,7 @@ def _persist_listing_from_dto(
         "availableFrom": "available_from",
         "availableTo": "available_to",
         "status": "status",
+        "photos": "photos",
         "roommates": "roommates",
     }
     for field_name, dict_key in field_map.items():

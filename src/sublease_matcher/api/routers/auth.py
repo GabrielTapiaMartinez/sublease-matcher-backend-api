@@ -39,6 +39,8 @@ class UserDTO(BaseModel):
     firstName: str | None
     lastName: str | None
     role: str | None
+    show_in_swipe: bool | None = True
+    email_notifications_enabled: bool | None = True
 
 # Helpers
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -101,7 +103,9 @@ def register(
             email=new_user.email,
             firstName=new_user.first_name,
             lastName=new_user.last_name,
-            role=None
+            role=None,
+            show_in_swipe=new_user.show_in_swipe,
+            email_notifications_enabled=new_user.email_notifications_enabled,
         )
     )
 
@@ -130,7 +134,9 @@ def login(
             email=user.email,
             firstName=user.first_name,
             lastName=user.last_name,
-            role=user.current_role
+            role=user.current_role,
+            show_in_swipe=user.show_in_swipe,
+            email_notifications_enabled=user.email_notifications_enabled,
         )
     )
 

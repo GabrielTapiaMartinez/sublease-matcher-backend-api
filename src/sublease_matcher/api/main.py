@@ -11,7 +11,7 @@ from .dependencies.uow import get_uow
 from .errors import Problem, problem
 from .interfaces.errors import ConflictError, NotFoundError, ValidationError
 from .logging_config import configure_logging
-from .routers import listings, matches,  seekers, swipes, auth
+from .routers import listings, matches,  seekers, swipes, auth, users
 
 
 class HealthResponse(BaseModel):
@@ -46,6 +46,7 @@ app.include_router(swipes.router)
 app.include_router(swipes.public_router)
 app.include_router(matches.router)
 app.include_router(auth.router)
+app.include_router(users.router)
 
 
 @app.get("/", response_model=HealthResponse, tags=["root"])

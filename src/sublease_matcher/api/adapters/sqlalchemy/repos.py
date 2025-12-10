@@ -51,9 +51,17 @@ class SqlAlchemySeekerRepo(SeekerRepo):
         self._users = users
 
     def _to_dict(self, seeker: models.SeekerProfile) -> SeekerDict:
+        # Best effort to get name from user relation if loaded/available
+        name = "Anonymous"
+        if seeker.user:
+            name = f"{seeker.user.first_name} {seeker.user.last_name or ''}".strip()
+        
+        photos = [p.url for p in sorted(seeker.photos, key=lambda x: x.position)] if seeker.photos else []
+
         return {
             "id": seeker.id,
             "user_id": seeker.user_id,
+            "name": name,
             "bio": seeker.bio,
             "available_from": seeker.available_from,
             "available_to": seeker.available_to,
@@ -63,6 +71,7 @@ class SqlAlchemySeekerRepo(SeekerRepo):
             "interests_csv": seeker.interests_csv or "",
             "contact_email": seeker.contact_email,
             "hidden": not bool(seeker.visible),
+            "photos": photos,
         }
 
     def get(self, seeker_id: str) -> SeekerDict | None:
@@ -100,15 +109,33 @@ class SqlAlchemySeekerRepo(SeekerRepo):
                 setattr(db_obj, field, seeker.get(field))
         if "interests_csv" in seeker:
             db_obj.interests_csv = seeker.get("interests_csv") or ""
+        if "photos" in seeker:
+            # Clear existing and re-add
+            # Note: For production, you might want more smart diffing, but this is fine for now
+            db_obj.photos.clear()
+            for idx, url in enumerate(seeker.get("photos") or []):
+                if url: # Skip empty strings
+                    db_obj.photos.append(models.SeekerPhoto(id=str(uuid4()), url=str(url), position=idx))
         if "hidden" in seeker:
             db_obj.visible = not bool(seeker.get("hidden"))
         if db_obj.visible is None:
             db_obj.visible = True
         self.session.flush()
+        # Refresh to ensure relationships are accessible if needed immediately
+        # self.session.refresh(db_obj) 
         return self._to_dict(db_obj)
 
     def queue_for_host(self, host_id: str) -> Sequence[SeekerDict]:
-        stmt = select(models.SeekerProfile).where(models.SeekerProfile.visible == True)  # noqa: E712
+        from sqlalchemy.orm import selectinload
+        stmt = (
+            select(models.SeekerProfile)
+            .join(models.User, models.SeekerProfile.user_id == models.User.id)
+            .where(
+                models.SeekerProfile.visible == True,  # noqa: E712
+                models.User.show_in_swipe == True,
+            )
+            .options(selectinload(models.SeekerProfile.user), selectinload(models.SeekerProfile.photos))
+        )
         seekers = self.session.scalars(stmt).all()
         return [self._to_dict(seeker) for seeker in seekers]
 
@@ -162,6 +189,9 @@ class SqlAlchemyListingRepo(ListingRepo):
 
     def _to_dict(self, listing: models.Listing) -> ListingDict:
         status_value = cast(Literal["DRAFT", "PUBLISHED", "UNLISTED"], listing.status)
+        
+        photos = [p.url for p in sorted(listing.photos, key=lambda x: x.position)] if listing.photos else []
+        
         data: ListingDict = {
             "id": listing.id,
             "host_id": listing.host_id,
@@ -172,6 +202,7 @@ class SqlAlchemyListingRepo(ListingRepo):
             "available_from": listing.available_from,
             "available_to": listing.available_to,
             "status": status_value,
+            "photos": photos,
         }
         data["roommates"] = [
             {
@@ -249,6 +280,17 @@ class SqlAlchemyListingRepo(ListingRepo):
                         bio=roommate.get("bio"),
                     )
                 )
+        if "photos" in listing:
+            db_obj.photos.clear()
+            for idx, url in enumerate(listing.get("photos") or []):
+                if url:
+                    db_obj.photos.append(
+                        models.ListingPhoto(
+                            id=str(uuid4()),
+                            url=str(url),
+                            position=idx
+                        )
+                    )
         self.session.flush()
         return self._to_dict(db_obj)
 
@@ -271,7 +313,16 @@ class SqlAlchemyListingRepo(ListingRepo):
         return [self._to_dict(listing) for listing in listings]
 
     def queue_for_seeker(self, seeker_id: str) -> Sequence[ListingDict]:
-        stmt = select(models.Listing).where(models.Listing.status == "PUBLISHED")
+        from sqlalchemy.orm import selectinload
+        stmt = (
+            select(models.Listing)
+            .join(models.HostProfile, models.Listing.host_id == models.HostProfile.id)
+            .join(models.User, models.HostProfile.user_id == models.User.id)
+            .where(
+                models.User.show_in_swipe == True
+            )
+            .options(selectinload(models.Listing.photos))
+        )
         listings = self.session.scalars(stmt).all()
         return [self._to_dict(listing) for listing in listings]
 

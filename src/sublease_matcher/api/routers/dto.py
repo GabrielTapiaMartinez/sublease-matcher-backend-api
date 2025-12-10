@@ -23,6 +23,7 @@ class SeekerProfileDTO(BaseModel):
     budgetMax: Decimal | None = None
     city: str | None = None
     interests: list[str] = Field(default_factory=list)
+    photos: list[str] = Field(default_factory=list)
     contactEmail: str | None = None
     hidden: bool | None = None
 
@@ -60,6 +61,7 @@ class SeekerProfileDTO(BaseModel):
             "budget_max": self.budgetMax,
             "city": self.city,
             "interests_csv": interests_csv if interests_csv else "",
+            "photos": self.photos,
             "contact_email": self.contactEmail,
         }
         if self.hidden is not None:
@@ -80,6 +82,7 @@ class SeekerProfileDTO(BaseModel):
             budgetMax=data.get("budget_max"),
             city=data.get("city"),
             interests=interests,
+            photos=data.get("photos", []),
             contactEmail=data.get("contact_email"),
             hidden=data.get("hidden"),
         )
@@ -125,6 +128,7 @@ class HostListingDTO(BaseModel):
     status: ListingStatus | None = None
     contactEmail: str | None = None
     bio: str | None = None
+    photos: list[str] = Field(default_factory=list)
     roommates: list[RoommateDTO] = Field(default_factory=list)
 
     model_config = ConfigDict(
@@ -194,26 +198,11 @@ class HostListingDTO(BaseModel):
             "available_from": self.availableFrom,
             "available_to": self.availableTo,
             "status": self.status,
+            "photos": self.photos,
             "roommates": [roommate.model_dump(exclude_none=True) for roommate in self.roommates],
         }
 
-    def dto_to_update_cmd(user_id: str, dto: SeekerProfileDTO) -> UpdateSeekerCmd:
-        # _SENTINEL imported from models.py
-        return UpdateSeekerCmd(
-            user_id=user_id,
-            bio=dto.bio if dto.bio is not None else _SENTINEL,
-            available_from=_SENTINEL,  # set appropriately if present on DTO
-            available_to=_SENTINEL, # same here
-            budget_min=dto.budgetMin if dto.budgetMin is not None else _SENTINEL,
-            budget_max=dto.budgetMax if dto.budgetMax is not None else _SENTINEL,
-            city=dto.city if dto.city is not None else _SENTINEL,
-            interests=tuple(dto.interests) if dto.interests else _SENTINEL,
-            contact_email=dto.contactEmail if dto.contactEmail is not None else _SENTINEL,
-            hidden=dto.hidden if dto.hidden is not None else _SENTINEL
-        )
-
-
-# RoommatePublicDTO and HostListingDTO stay as they are unless you also need to update their fields.
+    # RoommatePublicDTO can stay as is
 
     @classmethod
     def from_parts(
@@ -238,6 +227,7 @@ class HostListingDTO(BaseModel):
             status=(listing or {}).get("status"),
             contactEmail=(host or {}).get("contact_email"),
             bio=(host or {}).get("bio"),
+            photos=(listing or {}).get("photos") or [],
             roommates=roommates,
         )
 

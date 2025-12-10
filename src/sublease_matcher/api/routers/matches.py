@@ -2,70 +2,104 @@
 Matches router - dedicated endpoints for match operations.
 
 Provides:
-- GET /matches - Alias to /swipe/matches/me
+- GET /matches - Secure, enriched matches for the current user
 - GET /matches/recommendations - Recommendation queue for seekers
 """
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Union
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from ..adapters.memory_uow import InMemoryUnitOfWork
 from ..dependencies.uow import get_uow
 from ..dependencies.auth import get_current_user_id
 from ..interfaces.errors import NotFoundError
+from ..interfaces.uow import UnitOfWork
 from ..interfaces.types import ListingDict, MatchDict
 from .swipes import (
     ListingQueueItem,
+    SeekerQueueItem,
     MatchOut,
-    _compute_matches,
     _to_listing_queue_item,
+    _to_seeker_queue_item,
     _to_match_out,
 )
 
 router = APIRouter(prefix="/matches", tags=["matches"])
 
 
+class EnrichedMatch(MatchOut):
+    """A match that includes details about the matched profile/listing."""
+    target_profile: Union[ListingQueueItem, SeekerQueueItem, None] = None
+
+
 class RecommendationItem(BaseModel):
     """A recommendation with listing preview data."""
-
     listing: ListingQueueItem
     score: float | None = None
     reason: str | None = None
 
 
-@router.get("", response_model=list[MatchOut])
-def matches_surface(
-    request: Request,
-    uow: InMemoryUnitOfWork = Depends(get_uow),
-) -> list[MatchOut]:
+@router.get("", response_model=list[EnrichedMatch])
+def get_matches(
+    uow: UnitOfWork = Depends(get_uow),
+    user_id: str = Depends(get_current_user_id),
+) -> list[EnrichedMatch]:
     """
-    Get mutual matches for the user.
+    Get mutual matches for the current user.
     
-    Alias to /swipe/matches/me for compatibility.
+    Identifies if the user is a Seeker or Host and returns appropriate matches
+    enriched with the OTHER party's profile data.
     """
-    return _compute_matches(request, uow)
+    # 1. Try as Seeker
+    seeker = uow.seekers.get_by_user(user_id)
+    if seeker and seeker.get("id"):
+        matches = uow.matches.list_for_seeker(seeker["id"])
+        results = []
+        for match in matches:
+            out = EnrichedMatch(**_to_match_out(match).model_dump())
+            # Fetch the listing details
+            listing = uow.listings.get(match["listing_id"])
+            if listing:
+                out.target_profile = _to_listing_queue_item(listing)
+            results.append(out)
+        return results
+
+    # 2. Try as Host
+    host = uow.hosts.get_by_user(user_id)
+    if host and host.get("id"):
+        matches = uow.matches.list_for_host(host["id"])
+        
+        # Filter matches by the host's active listing (if any)
+        # In a real app, a host might have multiple listings, but here we assume one active context
+        listing = uow.listings.get_by_host(host["id"])
+        if listing and listing.get("id"):
+             matches = [m for m in matches if m.get("listing_id") == listing["id"]]
+        
+        results = []
+        for match in matches:
+            out = EnrichedMatch(**_to_match_out(match).model_dump())
+            # Fetch the seeker details
+            matched_seeker = uow.seekers.get(match["seeker_id"])
+            if matched_seeker:
+                out.target_profile = _to_seeker_queue_item(matched_seeker)
+            results.append(out)
+        return results
+
+    # 3. No profile found
+    return []
 
 
 @router.get("/recommendations", response_model=list[RecommendationItem])
 def get_recommendations(
-    uow: InMemoryUnitOfWork = Depends(get_uow),
+    uow: UnitOfWork = Depends(get_uow),
     user_id: str = Depends(get_current_user_id),
     limit: int = 20,
 ) -> list[RecommendationItem]:
     """
     Get personalized listing recommendations for a seeker.
-    
-    This mirrors the seeker queue preview but with additional metadata:
-    - Listings are ranked by compatibility score
-    - Excludes already-swiped listings
-    - Includes score and optional reason for the recommendation
-    
-    Query Parameters:
-    - limit: Maximum number of recommendations to return (default: 20)
     """
     # Get the seeker profile for the current user
     seeker = uow.seekers.get_by_user(user_id)
@@ -102,10 +136,6 @@ def _calculate_recommendation_score(
 ) -> float:
     """
     Calculate a recommendation score between 0.0 and 1.0.
-    
-    Scoring factors:
-    - City match: 0.5 points
-    - Budget fit: 0.5 points (with decay for prices over budget)
     """
     score = 0.0
     

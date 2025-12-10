@@ -36,6 +36,7 @@ class SwipeIn(BaseModel):
     )
 
 
+
 class ListingQueueItem(BaseModel):
     id: str
     title: str | None = None
@@ -45,16 +46,19 @@ class ListingQueueItem(BaseModel):
     status: Literal["DRAFT", "PUBLISHED", "UNLISTED"] | None = None
     availableFrom: str | None = None
     availableTo: str | None = None
+    photos: list[str] = []
 
 
 class SeekerQueueItem(BaseModel):
     id: str
+    name: str | None = None
     bio: str | None = None
     budgetMin: Decimal | None = None
     budgetMax: Decimal | None = None
     city: str | None = None
     available_from: str | None = None
     available_to: str | None = None
+    photos: list[str] = []
 
 
 class SwipeOut(BaseModel):
@@ -100,6 +104,7 @@ def _to_listing_queue_item(listing: ListingDict) -> ListingQueueItem:
         status=listing.get("status"),
         availableFrom=str(available_from) if available_from else None,
         availableTo=str(available_to) if available_to else None,
+        photos=listing.get("photos", []),
     )
 
 
@@ -108,12 +113,14 @@ def _to_seeker_queue_item(seeker: SeekerDict) -> SeekerQueueItem:
     available_to = seeker.get("available_to")
     return SeekerQueueItem(
         id=seeker.get("id", ""),
+        name=seeker.get("name"),
         bio=seeker.get("bio"),
         budgetMin=seeker.get("budget_min"),
         budgetMax=seeker.get("budget_max"),
         city=seeker.get("city"),
         available_from=str(available_from) if available_from else None,
         available_to=str(available_to) if available_to else None,
+        photos=seeker.get("photos", []),
     )
 
 

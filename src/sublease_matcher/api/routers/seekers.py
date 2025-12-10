@@ -99,6 +99,8 @@ def _upsert_profile(
         payload["city"] = profile.city
     if "interests" in fields_set:
         payload["interests_csv"] = ",".join(profile.interests)
+    if "photos" in fields_set:
+        payload["photos"] = profile.photos
     if "contactEmail" in fields_set:
         payload["contact_email"] = profile.contactEmail
     if "hidden" in fields_set and profile.hidden is not None:
