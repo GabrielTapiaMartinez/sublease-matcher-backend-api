@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict
 from ..adapters.memory_repos import InMemorySwipeRepo
 from ..adapters.memory_uow import InMemoryUnitOfWork
 from ..dependencies.uow import get_uow
+from ..dependencies.auth import get_current_user_id
 from ..interfaces.errors import NotFoundError
 from ..interfaces.types import HostDict, ListingDict, MatchDict, SeekerDict, SwipeDict
 
@@ -17,12 +18,6 @@ router = APIRouter(prefix="/swipe", tags=["swipe"])
 public_router = APIRouter(tags=["swipe"])
 
 
-def get_user_id(request: Request) -> str:
-    return request.headers.get("X-Debug-User-Id") or "user-1"
-
-
-def get_host_user_id(request: Request) -> str:
-    return request.headers.get("X-Debug-User-Id") or "user-10"
 
 
 class SwipeIn(BaseModel):
@@ -148,23 +143,25 @@ def _to_match_out(match: MatchDict) -> MatchOut:
 @router.get("/queue/seeker", response_model=list[ListingQueueItem])
 def seeker_queue(
     uow: InMemoryUnitOfWork = Depends(get_uow),
-    user_id: str = Depends(get_user_id),
+    user_id: str = Depends(get_current_user_id),
 ) -> list[ListingQueueItem]:
     seeker = uow.seekers.get_by_user(user_id)
     if seeker is None or not seeker.get("id"):
-        raise NotFoundError("Seeker profile not found")
+        # Auto-create profile if missing so the user can start swiping immediately
+        seeker = uow.seekers.upsert({"user_id": user_id})
     listing_queue = uow.listings.queue_for_seeker(seeker["id"])
     return [_to_listing_queue_item(item) for item in listing_queue]
 
 
 @router.get("/queue/host", response_model=list[SeekerQueueItem])
 def host_queue(
-    user_id: str = Depends(get_host_user_id),
+    user_id: str = Depends(get_current_user_id),
     uow: InMemoryUnitOfWork = Depends(get_uow),
 ) -> list[SeekerQueueItem]:
     host = uow.hosts.get_by_user(user_id)
     if host is None or not host.get("id"):
-        raise NotFoundError("Host profile not found")
+        # Auto-create profile if missing
+        host = uow.hosts.upsert({"user_id": user_id})
     seeker_queue = [
         seeker for seeker in uow.seekers.queue_for_host(host["id"]) if not seeker.get("hidden")
     ]
@@ -212,7 +209,7 @@ def _handle_mutual_like_for_seeker(
 def record_swipe(
     payload: SwipeIn,
     uow: InMemoryUnitOfWork = Depends(get_uow),
-    user_id: str = Depends(get_user_id),
+    user_id: str = Depends(get_current_user_id),
 ) -> SwipeOut:
     swipe = uow.swipes.record_swipe(user_id, payload.targetId, payload.decision)
 
@@ -228,8 +225,12 @@ def record_swipe(
             host = uow.hosts.get_by_user(user_id)
             listing = uow.listings.get_by_host(host["id"]) if host and host.get("id") else None
             seeker = uow.seekers.get(payload.targetId)
-            if host is None or listing is None or seeker is None:
-                raise NotFoundError("Host, listing, or seeker not found for swipe")
+            
+            # Host and Seeker MUST exist, but Listing is optional corresponding to a new host
+            if host is None or seeker is None:
+                raise NotFoundError("Host or seeker not found for swipe")
+                
+            # Only try to match if a listing actually exists
             if host is not None and listing is not None and seeker is not None:
                 _handle_mutual_like_for_seeker(
                     uow=uow,
@@ -244,7 +245,7 @@ def record_swipe(
 @router.post("/swipes/undo", response_model=UndoResponse)
 def undo_swipe(
     uow: InMemoryUnitOfWork = Depends(get_uow),
-    user_id: str = Depends(get_user_id),
+    user_id: str = Depends(get_current_user_id),
 ) -> UndoResponse:
     restored = uow.swipes.undo_last(user_id)
     return UndoResponse(restored=_to_swipe_out(restored) if restored else None)

@@ -75,7 +75,7 @@ class SqlAlchemySeekerRepo(SeekerRepo):
         return self._to_dict(seeker) if seeker else None
 
     def upsert(self, seeker: SeekerDict) -> SeekerDict:
-        seeker_id = seeker.get("id") or str(uuid4())
+        seeker_id = seeker.get("id") or f"seeker-{uuid4()}"
         db_obj = self.session.get(models.SeekerProfile, seeker_id)
         incoming_user_id = seeker.get("user_id")
         if db_obj is None:
@@ -137,7 +137,7 @@ class SqlAlchemyHostRepo(HostRepo):
         return self._to_dict(host) if host else None
 
     def upsert(self, host: HostDict) -> HostDict:
-        host_id = host.get("id") or str(uuid4())
+        host_id = host.get("id") or f"host-{uuid4()}"
         db_obj = self.session.get(models.HostProfile, host_id)
         incoming_user_id = host.get("user_id")
         if db_obj is None:
@@ -211,7 +211,7 @@ class SqlAlchemyListingRepo(ListingRepo):
         if db_obj is None:
             if "host_id" not in listing:
                 raise ValueError("host_id is required for listings")
-            listing_id = listing_id or str(uuid4())
+            listing_id = listing_id or f"listing-{uuid4()}"
             db_obj = models.Listing(id=listing_id, host_id=listing["host_id"])
             self.session.add(db_obj)
         db_obj.host_id = listing["host_id"]
@@ -399,14 +399,27 @@ class SqlAlchemySwipeRepo(SwipeRepo):
             listing = self.session.get(models.Listing, target_id)
             if seeker is None or listing is None:
                 raise NotFoundError("Seeker or listing not found for swipe")
-            swipe = models.SeekerSwipe(
-                id=str(uuid4()),
-                seeker_id=seeker.id,
-                listing_id=listing.id,
-                decision=normalized,
-                created_at=now,
+            
+            # Check for existing swipe
+            stmt = select(models.SeekerSwipe).where(
+                models.SeekerSwipe.seeker_id == seeker.id,
+                models.SeekerSwipe.listing_id == listing.id
             )
-            self.session.add(swipe)
+            swipe = self.session.scalars(stmt).first()
+
+            if swipe:
+                swipe.decision = normalized
+                swipe.created_at = now
+            else:
+                swipe = models.SeekerSwipe(
+                    id=str(uuid4()),
+                    seeker_id=seeker.id,
+                    listing_id=listing.id,
+                    decision=normalized,
+                    created_at=now,
+                )
+                self.session.add(swipe)
+            
             self.session.flush()
             return self._format_swipe(
                 swipe_id=swipe.id,
@@ -420,14 +433,27 @@ class SqlAlchemySwipeRepo(SwipeRepo):
             seeker = self.session.get(models.SeekerProfile, target_id)
             if host is None or seeker is None:
                 raise NotFoundError("Host or seeker not found for swipe")
-            host_swipe = models.HostSwipe(
-                id=str(uuid4()),
-                host_id=host.id,
-                seeker_id=seeker.id,
-                decision=normalized,
-                created_at=now,
+            
+            # Check for existing swipe
+            stmt = select(models.HostSwipe).where(
+                models.HostSwipe.host_id == host.id,
+                models.HostSwipe.seeker_id == seeker.id
             )
-            self.session.add(host_swipe)
+            host_swipe = self.session.scalars(stmt).first()
+
+            if host_swipe:
+                host_swipe.decision = normalized
+                host_swipe.created_at = now
+            else:
+                host_swipe = models.HostSwipe(
+                    id=str(uuid4()),
+                    host_id=host.id,
+                    seeker_id=seeker.id,
+                    decision=normalized,
+                    created_at=now,
+                )
+                self.session.add(host_swipe)
+
             self.session.flush()
             return self._format_swipe(
                 swipe_id=host_swipe.id,

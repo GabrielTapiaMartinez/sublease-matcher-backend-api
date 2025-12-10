@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Request
 
 from ..adapters.memory_uow import InMemoryUnitOfWork
 from ..dependencies.uow import get_uow
+from ..dependencies.auth import get_current_user_id
 from ..interfaces.errors import ConflictError, NotFoundError, ValidationError
 from ..interfaces.types import HostDict, ListingDict
 from .dto import HostListingDTO
@@ -22,8 +23,6 @@ router = APIRouter(prefix="/hosts/me", tags=["listings"])
 public_router = APIRouter(prefix="/listings", tags=["listings"])
 
 
-def get_current_user_id(request: Request) -> str:
-    return request.headers.get("user_id") or "user-10"
 
 
 def _clamp_non_negative(value: Decimal | None) -> Decimal | None:

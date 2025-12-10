@@ -11,6 +11,7 @@ from ..interfaces.errors import NotFoundError, ValidationError
 from .dto import SeekerProfileDTO
 from sublease_matcher.core.errors import Validation
 from sublease_matcher.core.domain.value_objects import Money, validate_availability_dates, validate_email
+from ..dependencies.auth import get_current_user_id
 
 router = APIRouter(prefix="/seekers/me", tags=["seekers"])
 profiles_router = APIRouter(prefix="/profiles", tags=["seekers"])
@@ -36,8 +37,6 @@ def safe_profile_from_dict(d: dict) -> SeekerProfileDTO:
             d.pop("budget_max", None)
     return SeekerProfileDTO.from_dict(d)
 
-def get_current_user_id(request: Request) -> str:
-    return request.headers.get("X-Debug-User-Id") or "user-1"
 
 def _clamp_non_negative(value: Decimal | None) -> Decimal | None:
     if value is None:

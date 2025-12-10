@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from ..adapters.memory_uow import InMemoryUnitOfWork
 from ..dependencies.uow import get_uow
+from ..dependencies.auth import get_current_user_id
 from ..interfaces.errors import NotFoundError
 from ..interfaces.types import ListingDict, MatchDict
 from .swipes import (
@@ -23,7 +24,6 @@ from .swipes import (
     _compute_matches,
     _to_listing_queue_item,
     _to_match_out,
-    get_user_id,
 )
 
 router = APIRouter(prefix="/matches", tags=["matches"])
@@ -53,7 +53,7 @@ def matches_surface(
 @router.get("/recommendations", response_model=list[RecommendationItem])
 def get_recommendations(
     uow: InMemoryUnitOfWork = Depends(get_uow),
-    user_id: str = Depends(get_user_id),
+    user_id: str = Depends(get_current_user_id),
     limit: int = 20,
 ) -> list[RecommendationItem]:
     """

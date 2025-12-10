@@ -13,17 +13,17 @@ reinstall:
 	$(PY) -m pip install -e .
 
 run:
-	uvicorn sublease_matcher.api.main:app --reload
+	$(PY) -m uvicorn sublease_matcher.api.main:app --reload
 
 run-src:
 	PYTHONPATH=$(PYTHONPATH_DEV) \
-		uvicorn --app-dir src sublease_matcher.api.main:app --reload
+		$(PY) -m uvicorn --app-dir src sublease_matcher.api.main:app --reload
 
 run-sql:
 	PYTHONPATH=$(PYTHONPATH_DEV) \
 		SM_DATABASE_URL="$(DB_DEV_URL)" \
 		SM_STORAGE=sqlalchemy \
-		uvicorn --app-dir src sublease_matcher.api.main:app --reload
+		$(PY) -m uvicorn --app-dir src sublease_matcher.api.main:app --reload
 
 check-import:
 	$(PY) -c "import sys,pkgutil,importlib; print('sys.path0=',sys.path[0]); print('has_pkg=', any(m.name=='sublease_matcher' for m in pkgutil.iter_modules())); m=importlib.import_module('sublease_matcher.api.main'); print('main_file=',getattr(m,'__file__','<unknown>'))"

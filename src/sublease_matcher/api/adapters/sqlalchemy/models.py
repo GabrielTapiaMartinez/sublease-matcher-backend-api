@@ -63,6 +63,7 @@ class User(Base):
         nullable=False,
         server_default=sa.text("TRUE"),
     )
+    password_hash: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
 
     seeker_profile: Mapped[SeekerProfile] = relationship(
         "SeekerProfile",
@@ -74,6 +75,28 @@ class User(Base):
         back_populates="user",
         uselist=False,
     )
+
+
+class Session(Base):
+    __tablename__ = "sessions"
+
+    id: Mapped[str] = mapped_column(sa.String(length=64), primary_key=True)
+    user_id: Mapped[str] = mapped_column(
+        sa.String(length=64),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True),
+        nullable=False,
+        server_default=sa.text("now()"),
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(
+        sa.DateTime(timezone=True),
+        nullable=True,
+    )
+
+    user: Mapped[User] = relationship("User")
 
 
 class SeekerProfile(Base):
