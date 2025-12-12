@@ -12,9 +12,7 @@ from .repos import (
     SqlAlchemyMatchRepo,
     SqlAlchemySeekerRepo,
     SqlAlchemySwipeRepo,
-    SqlAlchemySwipeRepo,
     SqlAlchemyUserRepo,
-    SqlAlchemySessionRepo,
 )
 
 
@@ -23,7 +21,6 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
         self._session_factory = session_factory
         self.session = self._session_factory()
         self.users = SqlAlchemyUserRepo(self.session)
-        self.sessions = SqlAlchemySessionRepo(self.session)
         self.seekers = SqlAlchemySeekerRepo(self.session, self.users)
         self.hosts = SqlAlchemyHostRepo(self.session, self.users)
         self.listings = SqlAlchemyListingRepo(self.session)

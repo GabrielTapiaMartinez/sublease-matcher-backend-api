@@ -2,7 +2,6 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .adapters.memory_uow import InMemoryUnitOfWork
@@ -12,7 +11,7 @@ from .dependencies.uow import get_uow
 from .errors import Problem, problem
 from .interfaces.errors import ConflictError, NotFoundError, ValidationError
 from .logging_config import configure_logging
-from .routers import auth, listings, matches, seekers, swipes, uploads, users
+from .routers import listings, matches,  seekers, swipes, auth, users
 
 
 class HealthResponse(BaseModel):
@@ -39,8 +38,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.mount("/static", StaticFiles(directory="src/sublease_matcher/api/static"), name="static")
-
 app.include_router(seekers.router)
 app.include_router(seekers.profiles_router)
 app.include_router(listings.router)
@@ -50,7 +47,6 @@ app.include_router(swipes.public_router)
 app.include_router(matches.router)
 app.include_router(auth.router)
 app.include_router(users.router)
-app.include_router(uploads.router)
 
 
 @app.get("/", response_model=HealthResponse, tags=["root"])

@@ -59,33 +59,3 @@ class MatchRepo(Protocol):
         status: str,
         score: float | None,
     ) -> MatchDict: ...
-
-
-class UserProtocol(Protocol):
-    id: str
-    email: str
-    first_name: str | None
-    last_name: str | None
-    current_role: str | None
-    show_in_swipe: bool
-    email_notifications_enabled: bool
-    password_hash: str | None
-
-
-class UserRepo(Protocol):
-    def get(self, user_id: str) -> UserProtocol | None: ...
-    def get_by_email(self, email: str) -> UserProtocol | None: ...
-    def create(self, user_id: str, email: str, password_hash: str, **kwargs) -> UserProtocol: ...
-    def ensure_user(self, user_id: str, *, role: str | None = None) -> UserProtocol: ...
-
-
-class SessionProtocol(Protocol):
-    id: str  # The token
-    user_id: str
-    expires_at: datetime | None
-
-
-class SessionRepo(Protocol):
-    def create(self, user_id: str) -> str: ...
-    def get(self, token: str) -> SessionProtocol | None: ...
-    def delete(self, token: str) -> None: ...

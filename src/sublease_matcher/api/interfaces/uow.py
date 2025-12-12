@@ -3,7 +3,7 @@ from __future__ import annotations
 from types import TracebackType
 from typing import Protocol, Self
 
-from .repos import HostRepo, ListingRepo, MatchRepo, SeekerRepo, SwipeRepo, UserRepo, SessionRepo
+from .repos import HostRepo, ListingRepo, MatchRepo, SeekerRepo, SwipeRepo
 
 
 class UnitOfWork(Protocol):
@@ -11,11 +11,7 @@ class UnitOfWork(Protocol):
     hosts: HostRepo
     listings: ListingRepo
     swipes: SwipeRepo
-    listings: ListingRepo
-    swipes: SwipeRepo
     matches: MatchRepo
-    users: UserRepo
-    sessions: SessionRepo
 
     def __enter__(self) -> Self: ...
 

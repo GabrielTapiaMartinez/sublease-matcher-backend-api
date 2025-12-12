@@ -9,13 +9,15 @@ from pydantic import BaseModel, ConfigDict
 
 from ..adapters.memory_repos import InMemorySwipeRepo
 from ..adapters.memory_uow import InMemoryUnitOfWork
-from ..dependencies.auth import get_current_user_id
 from ..dependencies.uow import get_uow
+from ..dependencies.auth import get_current_user_id
 from ..interfaces.errors import NotFoundError
 from ..interfaces.types import HostDict, ListingDict, MatchDict, SeekerDict, SwipeDict
 
 router = APIRouter(prefix="/swipe", tags=["swipe"])
 public_router = APIRouter(tags=["swipe"])
+
+
 
 
 class SwipeIn(BaseModel):
@@ -32,6 +34,7 @@ class SwipeIn(BaseModel):
             ]
         }
     )
+
 
 
 class ListingQueueItem(BaseModel):
@@ -229,11 +232,11 @@ def record_swipe(
             host = uow.hosts.get_by_user(user_id)
             listing = uow.listings.get_by_host(host["id"]) if host and host.get("id") else None
             seeker = uow.seekers.get(payload.targetId)
-
+            
             # Host and Seeker MUST exist, but Listing is optional corresponding to a new host
             if host is None or seeker is None:
                 raise NotFoundError("Host or seeker not found for swipe")
-
+                
             # Only try to match if a listing actually exists
             if host is not None and listing is not None and seeker is not None:
                 _handle_mutual_like_for_seeker(

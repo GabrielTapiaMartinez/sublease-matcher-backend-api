@@ -4,7 +4,6 @@ from sublease_matcher.api.main import app  # Adjust this import to your actual F
 
 client = TestClient(app)
 
-
 def assert_status(resp, expected):
     print("Status:", resp.status_code)
     try:
@@ -12,7 +11,6 @@ def assert_status(resp, expected):
     except Exception:
         print("Response Text:", resp.text)
     assert resp.status_code == expected, f"Expected {expected}, got {resp.status_code}"
-
 
 def test_profile_alias_get_put():
     # Test both GET /profiles/me and /seekers/me/profile aliases
@@ -30,14 +28,13 @@ def test_profile_alias_get_put():
         "budgetMin": 600,
         "budgetMax": 900,
         "interests": ["music", "chess"],
-        "hidden": False,
+        "hidden": False
     }
     r1 = client.put("/seekers/me/profile", json=data)
     r2 = client.put("/profiles/me", json=data)
     print("PUT /seekers/me/profile:", r1.json())
     print("PUT /profiles/me:", r2.json())
     assert r1.json() == r2.json()
-
 
 def test_patch_hide_validation():
     # Hide with valid data
@@ -52,20 +49,19 @@ def test_patch_hide_validation():
     print("PATCH /profiles/hide (hidden None):", resp.text)
     assert_status(resp, 422)
 
-
 def test_missing_required_fields():
     # No city, budgets, or date fields
     resp = client.put("/seekers/me/profile", json={})
     print("PUT /seekers/me/profile (missing required fields):", resp.json())
     assert_status(resp, 200)  # Should succeed with all nullable
 
-
 def test_budget_negative():
-    resp = client.put("/seekers/me/profile", json={"budgetMin": -10, "budgetMax": 50})
+    resp = client.put("/seekers/me/profile", json={
+        "budgetMin": -10, "budgetMax": 50
+    })
     print("PUT /seekers/me/profile (negative budgetMin):", resp.json())
     data = resp.json()
     assert data["budgetMin"] == "0"  # should be clamped to zero
-
 
 def test_budget_max_none():
     # Only min budget set, max not provided
@@ -73,13 +69,11 @@ def test_budget_max_none():
     print("PUT /seekers/me/profile (budgetMax None):", resp.json())
     assert_status(resp, 200)
 
-
 def test_interests_serialization():
     resp = client.put("/seekers/me/profile", json={"interests": ["Dog", "Cat", "Dog"]})
     print("PUT /seekers/me/profile (interests serialization):", resp.json())
     data = resp.json()
     assert set(data["interests"]) == {"Dog", "Cat"}
-
 
 def test_toggle_hidden_alias_and_get_profile_hidden():
     # Set hidden True again; test both PATCH endpoints if supported
@@ -92,7 +86,6 @@ def test_toggle_hidden_alias_and_get_profile_hidden():
     assert profile.json().get("hidden") is True
     # Unhide for cleanup
     client.patch("/profiles/hide", json={"hidden": False})
-
 
 def test_swipe_queue_hidden_filtered():
     # This one requires implementation of host swipe queue endpoint!
@@ -107,7 +100,6 @@ def test_swipe_queue_hidden_filtered():
             assert not seeker.get("hidden")
     client.patch("/profiles/hide", json={"hidden": False})
 
-
 # Add these calls to your main or pytest runner as needed
 if __name__ == "__main__":
     test_profile_alias_get_put()
@@ -120,14 +112,12 @@ if __name__ == "__main__":
     # test_swipe_queue_hidden_filtered()  # Uncomment if swipe queue endpoint exists
     print("All edge case tests completed.")
 
-
 def pretty_print(resp):
     print("Status:", resp.status_code)
     try:
         print(resp.json())
     except Exception:
         print(resp.text)
-
 
 def test_create_valid():
     resp = client.put(
@@ -139,12 +129,11 @@ def test_create_valid():
             "budgetMin": 400,
             "budgetMax": 800,
             "interests": ["quiet", "near_campus"],
-            "hidden": False,
-        },
+            "hidden": False
+        }
     )
     print("test_create_valid:")
     pretty_print(resp)
-
 
 def test_create_blank_city():
     resp = client.put(
@@ -156,12 +145,11 @@ def test_create_blank_city():
             "budgetMin": 400,
             "budgetMax": 800,
             "interests": ["quiet", "near_campus"],
-            "hidden": False,
-        },
+            "hidden": False
+        }
     )
     print("test_create_blank_city:")
     pretty_print(resp)
-
 
 def test_create_invalid_date_order():
     resp = client.put(
@@ -173,12 +161,11 @@ def test_create_invalid_date_order():
             "budgetMin": 400,
             "budgetMax": 800,
             "interests": ["quiet", "near_campus"],
-            "hidden": False,
-        },
+            "hidden": False
+        }
     )
     print("test_create_invalid_date_order:")
     pretty_print(resp)
-
 
 def test_create_invalid_budget():
     resp = client.put(
@@ -190,24 +177,30 @@ def test_create_invalid_budget():
             "budgetMin": 900,
             "budgetMax": 800,
             "interests": ["quiet", "near_campus"],
-            "hidden": False,
-        },
+            "hidden": False
+        }
     )
     print("test_create_invalid_budget:")
     pretty_print(resp)
 
-
 def test_patch_budget():
-    resp = client.put("/seekers/me/profile", json={"budgetMin": 500, "budgetMax": 700})
+    resp = client.put(
+        "/seekers/me/profile",
+        json={
+            "budgetMin": 500,
+            "budgetMax": 700
+        }
+    )
     print("test_patch_budget:")
     pretty_print(resp)
 
-
 def test_toggle_hidden():
-    resp = client.patch("/profiles/hide", json={"hidden": True})
+    resp = client.patch(
+        "/profiles/hide",
+        json={"hidden": True}
+    )
     print("test_toggle_hidden:")
     pretty_print(resp)
-
 
 def main():
     print("\n--- Create valid seeker ---")
@@ -222,7 +215,6 @@ def main():
     test_patch_budget()
     print("\n--- Toggle hidden ---")
     test_toggle_hidden()
-
 
 if __name__ == "__main__":
     main()

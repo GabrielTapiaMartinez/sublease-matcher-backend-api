@@ -5,15 +5,13 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal, cast
 from uuid import uuid4
-import secrets
-from datetime import datetime, timedelta
 
 import sqlalchemy as sa
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ...interfaces.errors import NotFoundError
-from ...interfaces.repos import HostRepo, ListingRepo, MatchRepo, SeekerRepo, SwipeRepo, UserRepo, UserProtocol, SessionRepo, SessionProtocol
+from ...interfaces.repos import HostRepo, ListingRepo, MatchRepo, SeekerRepo, SwipeRepo
 from ...interfaces.types import HostDict, ListingDict, MatchDict, SeekerDict, SwipeDict
 from . import models
 
@@ -28,7 +26,7 @@ def _list_from_csv(csv_value: str | None) -> list[str]:
     return [item for item in csv_value.split(",") if item]
 
 
-class SqlAlchemyUserRepo(UserRepo):
+class SqlAlchemyUserRepo:
     """Utility repo to ensure FK rows exist for user-facing profiles."""
 
     def __init__(self, session: Session) -> None:
@@ -46,50 +44,6 @@ class SqlAlchemyUserRepo(UserRepo):
             user.current_role = role.upper()
         return user
 
-    def get(self, user_id: str) -> UserProtocol | None:
-        return self.session.get(models.User, user_id)
-
-    def get_by_email(self, email: str) -> UserProtocol | None:
-        return self.session.scalars(select(models.User).where(models.User.email == email)).first()
-
-    def create(self, user_id: str, email: str, password_hash: str, **kwargs) -> UserProtocol:
-        user = models.User(
-            id=user_id,
-            email=email,
-            password_hash=password_hash,
-            first_name=kwargs.get("first_name"),
-            last_name=kwargs.get("last_name"),
-            current_role=kwargs.get("role"), # Map role arg to current_role which is role_t
-        )
-        self.session.add(user)
-        return user
-
-
-
-class SqlAlchemySessionRepo(SessionRepo):
-    def __init__(self, session: Session) -> None:
-        self.session = session
-
-    def create(self, user_id: str) -> str:
-        token = secrets.token_hex(32)
-        session = models.Session(
-            id=token, user_id=user_id, expires_at=datetime.utcnow() + timedelta(days=30)
-        )
-        self.session.add(session)
-        # We rely on UOW commit, but for session we might want immediate flush/commit behavior
-        # matching original logic which did explicit uow.commit().
-        # However, UOW usage in endpoints typically commits at end.
-        self.session.flush()
-        return token
-
-    def get(self, token: str) -> SessionProtocol | None:
-        return self.session.get(models.Session, token)
-
-    def delete(self, token: str) -> None:
-        session = self.session.get(models.Session, token)
-        if session:
-            self.session.delete(session)
-
 
 class SqlAlchemySeekerRepo(SeekerRepo):
     def __init__(self, session: Session, users: SqlAlchemyUserRepo) -> None:
@@ -101,12 +55,8 @@ class SqlAlchemySeekerRepo(SeekerRepo):
         name = "Anonymous"
         if seeker.user:
             name = f"{seeker.user.first_name} {seeker.user.last_name or ''}".strip()
-
-        photos = (
-            [p.url for p in sorted(seeker.photos, key=lambda x: x.position)]
-            if seeker.photos
-            else []
-        )
+        
+        photos = [p.url for p in sorted(seeker.photos, key=lambda x: x.position)] if seeker.photos else []
 
         return {
             "id": seeker.id,
@@ -164,22 +114,19 @@ class SqlAlchemySeekerRepo(SeekerRepo):
             # Note: For production, you might want more smart diffing, but this is fine for now
             db_obj.photos.clear()
             for idx, url in enumerate(seeker.get("photos") or []):
-                if url:  # Skip empty strings
-                    db_obj.photos.append(
-                        models.SeekerPhoto(id=str(uuid4()), url=str(url), position=idx)
-                    )
+                if url: # Skip empty strings
+                    db_obj.photos.append(models.SeekerPhoto(id=str(uuid4()), url=str(url), position=idx))
         if "hidden" in seeker:
             db_obj.visible = not bool(seeker.get("hidden"))
         if db_obj.visible is None:
             db_obj.visible = True
         self.session.flush()
         # Refresh to ensure relationships are accessible if needed immediately
-        # self.session.refresh(db_obj)
+        # self.session.refresh(db_obj) 
         return self._to_dict(db_obj)
 
     def queue_for_host(self, host_id: str) -> Sequence[SeekerDict]:
         from sqlalchemy.orm import selectinload
-
         stmt = (
             select(models.SeekerProfile)
             .join(models.User, models.SeekerProfile.user_id == models.User.id)
@@ -187,9 +134,7 @@ class SqlAlchemySeekerRepo(SeekerRepo):
                 models.SeekerProfile.visible == True,  # noqa: E712
                 models.User.show_in_swipe == True,
             )
-            .options(
-                selectinload(models.SeekerProfile.user), selectinload(models.SeekerProfile.photos)
-            )
+            .options(selectinload(models.SeekerProfile.user), selectinload(models.SeekerProfile.photos))
         )
         seekers = self.session.scalars(stmt).all()
         return [self._to_dict(seeker) for seeker in seekers]
@@ -244,13 +189,9 @@ class SqlAlchemyListingRepo(ListingRepo):
 
     def _to_dict(self, listing: models.Listing) -> ListingDict:
         status_value = cast(Literal["DRAFT", "PUBLISHED", "UNLISTED"], listing.status)
-
-        photos = (
-            [p.url for p in sorted(listing.photos, key=lambda x: x.position)]
-            if listing.photos
-            else []
-        )
-
+        
+        photos = [p.url for p in sorted(listing.photos, key=lambda x: x.position)] if listing.photos else []
+        
         data: ListingDict = {
             "id": listing.id,
             "host_id": listing.host_id,
@@ -344,7 +285,11 @@ class SqlAlchemyListingRepo(ListingRepo):
             for idx, url in enumerate(listing.get("photos") or []):
                 if url:
                     db_obj.photos.append(
-                        models.ListingPhoto(id=str(uuid4()), url=str(url), position=idx)
+                        models.ListingPhoto(
+                            id=str(uuid4()),
+                            url=str(url),
+                            position=idx
+                        )
                     )
         self.session.flush()
         return self._to_dict(db_obj)
@@ -369,12 +314,13 @@ class SqlAlchemyListingRepo(ListingRepo):
 
     def queue_for_seeker(self, seeker_id: str) -> Sequence[ListingDict]:
         from sqlalchemy.orm import selectinload
-
         stmt = (
             select(models.Listing)
             .join(models.HostProfile, models.Listing.host_id == models.HostProfile.id)
             .join(models.User, models.HostProfile.user_id == models.User.id)
-            .where(models.User.show_in_swipe == True)
+            .where(
+                models.User.show_in_swipe == True
+            )
             .options(selectinload(models.Listing.photos))
         )
         listings = self.session.scalars(stmt).all()
@@ -504,11 +450,11 @@ class SqlAlchemySwipeRepo(SwipeRepo):
             listing = self.session.get(models.Listing, target_id)
             if seeker is None or listing is None:
                 raise NotFoundError("Seeker or listing not found for swipe")
-
+            
             # Check for existing swipe
             stmt = select(models.SeekerSwipe).where(
                 models.SeekerSwipe.seeker_id == seeker.id,
-                models.SeekerSwipe.listing_id == listing.id,
+                models.SeekerSwipe.listing_id == listing.id
             )
             swipe = self.session.scalars(stmt).first()
 
@@ -524,7 +470,7 @@ class SqlAlchemySwipeRepo(SwipeRepo):
                     created_at=now,
                 )
                 self.session.add(swipe)
-
+            
             self.session.flush()
             return self._format_swipe(
                 swipe_id=swipe.id,
@@ -538,10 +484,11 @@ class SqlAlchemySwipeRepo(SwipeRepo):
             seeker = self.session.get(models.SeekerProfile, target_id)
             if host is None or seeker is None:
                 raise NotFoundError("Host or seeker not found for swipe")
-
+            
             # Check for existing swipe
             stmt = select(models.HostSwipe).where(
-                models.HostSwipe.host_id == host.id, models.HostSwipe.seeker_id == seeker.id
+                models.HostSwipe.host_id == host.id,
+                models.HostSwipe.seeker_id == seeker.id
             )
             host_swipe = self.session.scalars(stmt).first()
 
