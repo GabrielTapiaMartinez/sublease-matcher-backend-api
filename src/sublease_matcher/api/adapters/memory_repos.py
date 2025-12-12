@@ -1,7 +1,9 @@
 from __future__ import annotations
+from dataclasses import dataclass, field
 
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timedelta, UTC
+import secrets
 from decimal import Decimal
 from typing import Literal
 from uuid import uuid4
@@ -12,8 +14,87 @@ from ..interfaces.repos import (
     MatchRepo,
     SeekerRepo,
     SwipeRepo,
+    UserRepo,
+    UserProtocol,
+    SessionRepo,
+    SessionProtocol,
 )
 from ..interfaces.types import HostDict, ListingDict, MatchDict, SeekerDict, SwipeDict
+
+
+@dataclass
+class InMemoryUser:
+    id: str
+    email: str
+    password_hash: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    current_role: str | None = None
+    show_in_swipe: bool = True
+    email_notifications_enabled: bool = True
+
+
+class InMemoryUserRepo(UserRepo):
+    def __init__(self, data: dict[str, InMemoryUser] | None = None) -> None:
+        self._data: dict[str, InMemoryUser] = data or {}
+
+    def get(self, user_id: str) -> UserProtocol | None:
+        return self._data.get(user_id)
+
+    def get_by_email(self, email: str) -> UserProtocol | None:
+        for user in self._data.values():
+            if user.email == email:
+                return user
+        return None
+
+    def create(self, user_id: str, email: str, password_hash: str, **kwargs) -> UserProtocol:
+        user = InMemoryUser(
+            id=user_id,
+            email=email,
+            password_hash=password_hash,
+            first_name=kwargs.get("first_name"),
+            last_name=kwargs.get("last_name"),
+            current_role=kwargs.get("role"), # Map role arg to current_role
+        )
+        self._data[user_id] = user
+        return user
+
+    def ensure_user(self, user_id: str, *, role: str | None = None) -> UserProtocol:
+        user = self._data.get(user_id)
+        if user is None:
+            user = InMemoryUser(id=user_id, email=f"{user_id}@example.edu")
+            self._data[user_id] = user
+        if role:
+            user.current_role = role.upper()
+        return user
+
+
+@dataclass
+class InMemorySession:
+    id: str
+    user_id: str
+    expires_at: datetime | None
+
+
+class InMemorySessionRepo(SessionRepo):
+    def __init__(self, data: dict[str, InMemorySession] | None = None) -> None:
+        self._data: dict[str, InMemorySession] = data or {}
+
+    def create(self, user_id: str) -> str:
+        token = secrets.token_hex(32)
+        session = InMemorySession(
+            id=token,
+            user_id=user_id,
+            expires_at=datetime.now(UTC) + timedelta(days=30),
+        )
+        self._data[token] = session
+        return token
+
+    def get(self, token: str) -> SessionProtocol | None:
+        return self._data.get(token)
+
+    def delete(self, token: str) -> None:
+        self._data.pop(token, None)
 
 
 class InMemorySeekerRepo(SeekerRepo):
@@ -36,10 +117,7 @@ class InMemorySeekerRepo(SeekerRepo):
         return seeker
 
     def queue_for_host(self, host_id: str) -> Sequence[SeekerDict]:
-        return [
-            seeker for seeker in self._data.values()
-            if not seeker.get("hidden")
-        ]
+        return [seeker for seeker in self._data.values() if not seeker.get("hidden")]
 
 
 class InMemoryHostRepo(HostRepo):
