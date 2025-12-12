@@ -2,25 +2,30 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from ..interfaces.uow import UnitOfWork
+from sublease_matcher.core.domain.value_objects import (
+    Money,
+    validate_availability_dates,
+)
+
+from ..dependencies.auth import get_current_user_id
 from ..dependencies.uow import get_uow
 from ..interfaces.errors import NotFoundError, ValidationError
+from ..interfaces.uow import UnitOfWork
 from .dto import SeekerProfileDTO
-from sublease_matcher.core.errors import Validation
-from sublease_matcher.core.domain.value_objects import Money, validate_availability_dates, validate_email
-from ..dependencies.auth import get_current_user_id
 
 router = APIRouter(prefix="/seekers/me", tags=["seekers"])
 profiles_router = APIRouter(prefix="/profiles", tags=["seekers"])
+
 
 def _reset_inmemory_uow(uow: UnitOfWork):
     if hasattr(uow.seekers, "clear"):
         uow.seekers.clear()
     elif hasattr(uow, "clear"):
         uow.clear()
+
 
 def safe_profile_from_dict(d: dict) -> SeekerProfileDTO:
     min_ = d.get("budget_min")
@@ -43,15 +48,15 @@ def _clamp_non_negative(value: Decimal | None) -> Decimal | None:
         return None
     return value if value >= Decimal("0") else Decimal("0")
 
+
 def _read_profile(uow: UnitOfWork, user_id: str) -> SeekerProfileDTO:
     seeker = uow.seekers.get_by_user(user_id)
     if seeker is None:
         raise NotFoundError("Seeker profile not found")
     return safe_profile_from_dict(seeker)
 
-def _upsert_profile(
-    profile: SeekerProfileDTO, uow: UnitOfWork, user_id: str
-) -> SeekerProfileDTO:
+
+def _upsert_profile(profile: SeekerProfileDTO, uow: UnitOfWork, user_id: str) -> SeekerProfileDTO:
     fields_set = profile.model_fields_set
 
     # Date range validation
@@ -64,8 +69,9 @@ def _upsert_profile(
             raise ValidationError(str(e)) from e
 
     # Budget validation
-    if ("budgetMin" in fields_set and profile.budgetMin is not None) and \
-       ("budgetMax" in fields_set and profile.budgetMax is not None):
+    if ("budgetMin" in fields_set and profile.budgetMin is not None) and (
+        "budgetMax" in fields_set and profile.budgetMax is not None
+    ):
         try:
             min_money = Money(profile.budgetMin)
             max_money = Money(profile.budgetMax)
@@ -109,6 +115,7 @@ def _upsert_profile(
     saved = uow.seekers.upsert(payload)
     return safe_profile_from_dict(saved)
 
+
 def _toggle_hidden(hidden: bool, uow: UnitOfWork, user_id: str) -> bool:
     seeker = uow.seekers.get_by_user(user_id)
     if seeker is None or not seeker.get("id"):
@@ -117,12 +124,14 @@ def _toggle_hidden(hidden: bool, uow: UnitOfWork, user_id: str) -> bool:
     uow.seekers.upsert(seeker)
     return hidden
 
+
 @router.get("/profile", response_model=SeekerProfileDTO)
 def read_profile(
     uow: UnitOfWork = Depends(get_uow),
     user_id: str = Depends(get_current_user_id),
 ) -> SeekerProfileDTO:
     return _read_profile(uow, user_id)
+
 
 @router.put("/profile", response_model=SeekerProfileDTO)
 def upsert_profile(
@@ -132,11 +141,14 @@ def upsert_profile(
 ) -> SeekerProfileDTO:
     return _upsert_profile(profile, uow, user_id)
 
+
 class HideToggle(BaseModel):
     hidden: bool
 
+
 class HideResponse(BaseModel):
     hidden: bool
+
 
 @profiles_router.get("/me", response_model=SeekerProfileDTO)
 def read_profile_alias(
@@ -145,6 +157,7 @@ def read_profile_alias(
 ) -> SeekerProfileDTO:
     return _read_profile(uow, user_id)
 
+
 @profiles_router.put("/me", response_model=SeekerProfileDTO)
 def upsert_profile_alias(
     profile: SeekerProfileDTO,
@@ -152,6 +165,7 @@ def upsert_profile_alias(
     user_id: str = Depends(get_current_user_id),
 ) -> SeekerProfileDTO:
     return _upsert_profile(profile, uow, user_id)
+
 
 @profiles_router.patch("/hide", response_model=HideResponse)
 def toggle_profile_hidden(
