@@ -7,9 +7,6 @@ from uuid import uuid4
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
-from ..config import Settings
-from ..dependencies.settings import get_settings
-
 router = APIRouter(prefix="/uploads", tags=["uploads"])
 
 UPLOAD_DIR = Path("src/sublease_matcher/api/static/uploads")
@@ -42,7 +39,7 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Could not save file: {str(e)}",
-        )
+        ) from e
     finally:
         file.file.close()
 

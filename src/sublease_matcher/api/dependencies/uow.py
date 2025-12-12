@@ -8,9 +8,9 @@ from ..adapters.memory_repos import (
     InMemoryListingRepo,
     InMemoryMatchRepo,
     InMemorySeekerRepo,
+    InMemorySessionRepo,
     InMemorySwipeRepo,
     InMemoryUserRepo,
-    InMemorySessionRepo,
 )
 from ..adapters.memory_uow import InMemoryUnitOfWork
 from ..adapters.seed_data import build_seed

@@ -11,10 +11,9 @@ from .repos import (
     SqlAlchemyListingRepo,
     SqlAlchemyMatchRepo,
     SqlAlchemySeekerRepo,
-    SqlAlchemySwipeRepo,
+    SqlAlchemySessionRepo,
     SqlAlchemySwipeRepo,
     SqlAlchemyUserRepo,
-    SqlAlchemySessionRepo,
 )
 
 

@@ -1,9 +1,9 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
 
-from collections.abc import Sequence
-from datetime import datetime, timedelta, UTC
 import secrets
+from collections.abc import Sequence
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Literal
 from uuid import uuid4
@@ -13,11 +13,11 @@ from ..interfaces.repos import (
     ListingRepo,
     MatchRepo,
     SeekerRepo,
-    SwipeRepo,
-    UserRepo,
-    UserProtocol,
-    SessionRepo,
     SessionProtocol,
+    SessionRepo,
+    SwipeRepo,
+    UserProtocol,
+    UserRepo,
 )
 from ..interfaces.types import HostDict, ListingDict, MatchDict, SeekerDict, SwipeDict
 

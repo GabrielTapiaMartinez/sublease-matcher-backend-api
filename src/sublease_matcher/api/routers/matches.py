@@ -192,9 +192,9 @@ def _generate_recommendation_reason(
 
     # Availability overlap (simplified check)
     seeker_from = seeker.get("available_from")
-    seeker_to = seeker.get("available_to")
+    # seeker_to = seeker.get("available_to")
     listing_from = listing.get("available_from")
-    listing_to = listing.get("available_to")
+    # listing_to = listing.get("available_to")
 
     if all([seeker_from, listing_from]):
         reasons.append("available dates align")

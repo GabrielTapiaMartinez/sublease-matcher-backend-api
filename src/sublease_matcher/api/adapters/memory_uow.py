@@ -11,7 +11,6 @@ from .memory_repos import (
     InMemorySeekerRepo,
     InMemorySessionRepo,
     InMemorySwipeRepo,
-    InMemorySwipeRepo,
     InMemoryUserRepo,
 )
 

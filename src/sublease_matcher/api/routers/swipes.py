@@ -255,9 +255,9 @@ def undo_swipe(
     return UndoResponse(restored=_to_swipe_out(restored) if restored else None)
 
 
-def _compute_matches(request: Request, uow: InMemoryUnitOfWork) -> List[MatchOut]:
+def _compute_matches(request: Request, uow: InMemoryUnitOfWork) -> list[MatchOut]:
     header_user = request.headers.get("X-Debug-User-Id")
-    candidate_users: List[str] = []
+    candidate_users: list[str] = []
     if header_user:
         candidate_users.append(header_user)
     else:

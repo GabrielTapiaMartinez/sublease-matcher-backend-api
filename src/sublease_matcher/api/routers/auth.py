@@ -1,15 +1,12 @@
 from __future__ import annotations
 
 import secrets
-from datetime import UTC, datetime, timedelta
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import select
 
-from ..adapters.sqlalchemy import models
 from ..dependencies.uow import get_uow
 from ..interfaces.uow import UnitOfWork
 

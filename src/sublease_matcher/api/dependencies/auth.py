@@ -1,5 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from ..dependencies.uow import get_uow
 from ..interfaces.repos import UserProtocol
 from ..interfaces.uow import UnitOfWork

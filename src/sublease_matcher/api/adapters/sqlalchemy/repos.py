@@ -1,19 +1,28 @@
 from __future__ import annotations
 
+import secrets
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Literal, cast
 from uuid import uuid4
-import secrets
-from datetime import datetime, timedelta
 
 import sqlalchemy as sa
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ...interfaces.errors import NotFoundError
-from ...interfaces.repos import HostRepo, ListingRepo, MatchRepo, SeekerRepo, SwipeRepo, UserRepo, UserProtocol, SessionRepo, SessionProtocol
+from ...interfaces.repos import (
+    HostRepo,
+    ListingRepo,
+    MatchRepo,
+    SeekerRepo,
+    SessionProtocol,
+    SessionRepo,
+    SwipeRepo,
+    UserProtocol,
+    UserRepo,
+)
 from ...interfaces.types import HostDict, ListingDict, MatchDict, SeekerDict, SwipeDict
 from . import models
 
@@ -185,7 +194,7 @@ class SqlAlchemySeekerRepo(SeekerRepo):
             .join(models.User, models.SeekerProfile.user_id == models.User.id)
             .where(
                 models.SeekerProfile.visible == True,  # noqa: E712
-                models.User.show_in_swipe == True,
+                models.User.show_in_swipe == True,  # noqa: E712
             )
             .options(
                 selectinload(models.SeekerProfile.user), selectinload(models.SeekerProfile.photos)
@@ -374,7 +383,7 @@ class SqlAlchemyListingRepo(ListingRepo):
             select(models.Listing)
             .join(models.HostProfile, models.Listing.host_id == models.HostProfile.id)
             .join(models.User, models.HostProfile.user_id == models.User.id)
-            .where(models.User.show_in_swipe == True)
+            .where(models.User.show_in_swipe == True)  # noqa: E712
             .options(selectinload(models.Listing.photos))
         )
         listings = self.session.scalars(stmt).all()
