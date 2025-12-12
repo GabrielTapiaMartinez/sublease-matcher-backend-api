@@ -9,8 +9,6 @@ from ..adapters.memory_repos import (
     InMemoryMatchRepo,
     InMemorySeekerRepo,
     InMemorySwipeRepo,
-    InMemoryUserRepo,
-    InMemorySessionRepo,
 )
 from ..adapters.memory_uow import InMemoryUnitOfWork
 from ..adapters.seed_data import build_seed
@@ -24,11 +22,9 @@ def _build_memory_uow() -> InMemoryUnitOfWork:
     seekers = InMemorySeekerRepo(seekers_data)
     hosts = InMemoryHostRepo(hosts_data)
     listings = InMemoryListingRepo(listings_data)
-    users = InMemoryUserRepo()
-    sessions = InMemorySessionRepo()
     swipes = InMemorySwipeRepo()
     matches = InMemoryMatchRepo()
-    return InMemoryUnitOfWork(users, sessions, seekers, hosts, listings, swipes, matches)
+    return InMemoryUnitOfWork(seekers, hosts, listings, swipes, matches)
 
 
 def get_uow() -> Iterator[UnitOfWork]:

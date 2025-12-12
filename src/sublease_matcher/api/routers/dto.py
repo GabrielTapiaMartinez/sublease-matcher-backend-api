@@ -5,7 +5,7 @@ from datetime import date
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Final, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 DRAFT: Final = "DRAFT"
 PUBLISHED: Final = "PUBLISHED"
@@ -46,6 +46,8 @@ class SeekerProfileDTO(BaseModel):
             ]
         },
     )
+
+
 
     def to_dict(self) -> dict[str, Any]:
         interests_csv = ",".join(self.interests)

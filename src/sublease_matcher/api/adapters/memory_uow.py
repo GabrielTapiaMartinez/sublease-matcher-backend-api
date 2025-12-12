@@ -9,26 +9,19 @@ from .memory_repos import (
     InMemoryListingRepo,
     InMemoryMatchRepo,
     InMemorySeekerRepo,
-    InMemorySessionRepo,
     InMemorySwipeRepo,
-    InMemorySwipeRepo,
-    InMemoryUserRepo,
 )
 
 
 class InMemoryUnitOfWork(UnitOfWork):
     def __init__(
         self,
-        users: InMemoryUserRepo,
-        sessions: InMemorySessionRepo,
         seekers: InMemorySeekerRepo,
         hosts: InMemoryHostRepo,
         listings: InMemoryListingRepo,
         swipes: InMemorySwipeRepo,
         matches: InMemoryMatchRepo,
     ) -> None:
-        self.users = users
-        self.sessions = sessions
         self.seekers = seekers
         self.hosts = hosts
         self.listings = listings

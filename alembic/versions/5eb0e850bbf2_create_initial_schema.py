@@ -79,10 +79,7 @@ def upgrade() -> None:
         sa.Column("contact_email", sa.Text(), nullable=True),
         sa.Column("available_from", sa.Date(), nullable=True),
         sa.Column("available_to", sa.Date(), nullable=True),
-        sa.CheckConstraint(
-            "available_to IS NULL OR available_to >= available_from",
-            name="ck_seeker_available_dates",
-        ),
+        sa.CheckConstraint("available_to IS NULL OR available_to >= available_from", name="ck_seeker_available_dates"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("user_id", name="uq_seeker_profiles_user_id"),

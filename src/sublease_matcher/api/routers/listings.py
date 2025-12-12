@@ -1,27 +1,28 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, MutableMapping
 from decimal import Decimal
 from typing import Any, Literal, cast
 
-from fastapi import APIRouter, Depends
-
-from sublease_matcher.core.domain.enums import ListingStatus
-from sublease_matcher.core.domain.ids import HostId, ListingId, RoommateId
-from sublease_matcher.core.domain.listing import Listing
-from sublease_matcher.core.domain.roommate import RoommateProfile
-from sublease_matcher.core.domain.value_objects import Money
-from sublease_matcher.core.errors import Validation
+from fastapi import APIRouter, Depends, Request
 
 from ..adapters.memory_uow import InMemoryUnitOfWork
-from ..dependencies.auth import get_current_user_id
 from ..dependencies.uow import get_uow
+from ..dependencies.auth import get_current_user_id
 from ..interfaces.errors import ConflictError, NotFoundError, ValidationError
 from ..interfaces.types import HostDict, ListingDict
 from .dto import HostListingDTO
+from sublease_matcher.core.errors import Validation
+from sublease_matcher.core.domain.listing import Listing
+from sublease_matcher.core.domain.enums import ListingStatus
+from sublease_matcher.core.domain.value_objects import Money
+from sublease_matcher.core.domain.roommate import RoommateProfile
+from sublease_matcher.core.domain.ids import ListingId, HostId, RoommateId
 
 router = APIRouter(prefix="/hosts/me", tags=["listings"])
 public_router = APIRouter(prefix="/listings", tags=["listings"])
+
+
 
 
 def _clamp_non_negative(value: Decimal | None) -> Decimal | None:
@@ -71,6 +72,9 @@ def _ensure_listing_owner(
     if current_host is None or current_host.get("id") != host.get("id"):
         raise NotFoundError("Listing not found")
     return host
+
+
+
 
 
 def _persist_listing_from_dto(
@@ -140,17 +144,15 @@ def _persist_listing_from_dto(
         roommates_data = listing_payload.get("roommates", [])
         roommates = []
         for r in roommates_data:
-            roommates.append(
-                RoommateProfile(
-                    id=RoommateId(r.get("id") or "temp-id"),
-                    name=r.get("name") or "Unknown",
-                    sleeping_habits=r.get("sleepingHabits"),
-                    gender=None,
-                    pronouns=r.get("pronouns"),
-                    interests=tuple(r.get("interests", [])),
-                    major_minor=None,
-                )
-            )
+            roommates.append(RoommateProfile(
+                id=RoommateId(r.get("id") or "temp-id"),
+                name=r.get("name") or "Unknown",
+                sleeping_habits=r.get("sleepingHabits"),
+                gender=None,
+                pronouns=r.get("pronouns"),
+                interests=tuple(r.get("interests", [])),
+                major_minor=None
+            ))
 
         # Map Money
         price_val = listing_payload.get("price_per_month")
@@ -169,7 +171,7 @@ def _persist_listing_from_dto(
             contact_email=listing_payload.get("contact_email"),
             bio=listing_payload.get("bio"),
             roommates=tuple(roommates),
-            roommates_count=len(roommates),
+            roommates_count=len(roommates)
         )
     except Validation as e:
         raise ValidationError(str(e)) from e
@@ -302,17 +304,15 @@ def toggle_listing_publication(
         roommates_data = listing.get("roommates", [])
         roommates = []
         for r in roommates_data:
-            roommates.append(
-                RoommateProfile(
-                    id=RoommateId(r.get("id") or "temp-id"),
-                    name=r.get("name") or "Unknown",
-                    sleeping_habits=r.get("sleepingHabits"),
-                    gender=None,
-                    pronouns=r.get("pronouns"),
-                    interests=tuple(r.get("interests", [])),
-                    major_minor=None,
-                )
-            )
+            roommates.append(RoommateProfile(
+                id=RoommateId(r.get("id") or "temp-id"),
+                name=r.get("name") or "Unknown",
+                sleeping_habits=r.get("sleepingHabits"),
+                gender=None,
+                pronouns=r.get("pronouns"),
+                interests=tuple(r.get("interests", [])),
+                major_minor=None
+            ))
 
         # Map Money
         price_val = listing.get("price_per_month")
@@ -331,7 +331,7 @@ def toggle_listing_publication(
             contact_email=listing.get("contact_email"),
             bio=listing.get("bio"),
             roommates=tuple(roommates),
-            roommates_count=len(roommates),
+            roommates_count=len(roommates)
         )
     except Validation as e:
         raise ValidationError(str(e)) from e
