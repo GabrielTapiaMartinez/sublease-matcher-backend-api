@@ -95,6 +95,7 @@ class RoommateDTO(BaseModel):
     cleanliness: str | None = None
     interests: list[str] = Field(default_factory=list)
     bio: str | None = None
+    photo_url: str | None = None
 
     model_config = ConfigDict(
         json_schema_extra={

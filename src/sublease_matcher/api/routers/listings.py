@@ -149,6 +149,7 @@ def _persist_listing_from_dto(
                     pronouns=r.get("pronouns"),
                     interests=tuple(r.get("interests", [])),
                     major_minor=None,
+                    photo_url=r.get("photo_url"),
                 )
             )
 
@@ -311,6 +312,7 @@ def toggle_listing_publication(
                     pronouns=r.get("pronouns"),
                     interests=tuple(r.get("interests", [])),
                     major_minor=None,
+                    photo_url=r.get("photo_url"),
                 )
             )
 
