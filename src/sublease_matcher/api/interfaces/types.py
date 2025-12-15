@@ -8,6 +8,8 @@ from typing import Any, Literal, TypedDict
 class SeekerDict(TypedDict, total=False):
     id: str
     user_id: str
+    name: str | None
+    age: int | None
     bio: str | None
     term: str | None
     term_year: int | None
@@ -16,6 +18,7 @@ class SeekerDict(TypedDict, total=False):
     city: str | None
     interests_csv: str | None
     contact_email: str | None
+    contact_phone: str | None
     hidden: bool
 
 
@@ -25,6 +28,7 @@ class HostDict(TypedDict, total=False):
     bio: str | None
     house_rules: str | None
     contact_email: str | None
+    contact_phone: str | None
 
 
 class ListingDict(TypedDict, total=False):

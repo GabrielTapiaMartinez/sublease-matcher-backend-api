@@ -62,6 +62,10 @@ class SqlAlchemySeekerRepo(SeekerRepo):
             "city": seeker.city,
             "interests_csv": seeker.interests_csv or "",
             "contact_email": seeker.contact_email,
+            "contact_phone": seeker.contact_phone,
+            "age": seeker.age,
+            # Synthesize generic 'name' from User if available
+            "name": f"{seeker.user.first_name} {seeker.user.last_name}".strip() if seeker.user else "Student",
             "hidden": not bool(seeker.visible),
         }
 
@@ -94,7 +98,11 @@ class SqlAlchemySeekerRepo(SeekerRepo):
             "budget_min",
             "budget_max",
             "city",
+            "budget_max",
+            "city",
             "contact_email",
+            "contact_phone",
+            "age",
         ):
             if field in seeker:
                 setattr(db_obj, field, seeker.get(field))
@@ -124,7 +132,10 @@ class SqlAlchemyHostRepo(HostRepo):
             "user_id": host.user_id,
             "bio": host.bio,
             "house_rules": host.house_rules,
+            "house_rules": host.house_rules,
             "contact_email": host.contact_email,
+            "contact_phone": host.contact_phone,
+            "name": f"{host.user.first_name} {host.user.last_name}".strip() if host.user else "Host",
         }
 
     def get(self, host_id: str) -> HostDict | None:
@@ -149,7 +160,7 @@ class SqlAlchemyHostRepo(HostRepo):
         elif incoming_user_id and incoming_user_id != db_obj.user_id:
             self._users.ensure_user(incoming_user_id, role="HOST")
             db_obj.user_id = incoming_user_id
-        for field in ("bio", "house_rules", "contact_email"):
+        for field in ("bio", "house_rules", "contact_email", "contact_phone"):
             if field in host:
                 setattr(db_obj, field, host.get(field))
         self.session.flush()

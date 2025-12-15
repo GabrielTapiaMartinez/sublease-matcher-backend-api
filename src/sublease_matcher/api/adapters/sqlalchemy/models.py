@@ -120,6 +120,8 @@ class SeekerProfile(Base):
     contact_email: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     need_from: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
     need_to: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
+    contact_phone: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    age: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
 
     user: Mapped[User] = relationship("User", back_populates="seeker_profile")
     photos: Mapped[list[SeekerPhoto]] = relationship(

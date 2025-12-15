@@ -122,6 +122,8 @@ def _seed_seekers(uow: SqlAlchemyUnitOfWork) -> None:
                 "city": "Eau Claire",
                 "interests_csv": "coding,swimming,reading",
                 "contact_email": "s1@example.edu",
+                "contact_phone": "555-0101",
+                "age": 20,
                 "hidden": False,
             },
             "need_from": date(2025, 8, 1),
@@ -151,6 +153,8 @@ def _seed_seekers(uow: SqlAlchemyUnitOfWork) -> None:
                 "city": "Eau Claire",
                 "interests_csv": "hiking,cinema",
                 "contact_email": "s2@example.edu",
+                "contact_phone": "555-0102",
+                "age": 21,
                 "hidden": False,
             },
             "need_from": date(2026, 1, 5),
@@ -193,6 +197,7 @@ def _seed_hosts_and_listings(uow: SqlAlchemyUnitOfWork) -> None:
             "bio": "2BR apartment close to campus",
             "house_rules": "No smoking after 10pm",
             "contact_email": "h1@example.edu",
+            "contact_phone": "555-0201",
         }
     ]
     for host in host_rows:

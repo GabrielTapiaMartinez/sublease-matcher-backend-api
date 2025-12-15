@@ -24,6 +24,10 @@ def _build_memory_uow() -> InMemoryUnitOfWork:
     listings = InMemoryListingRepo(listings_data)
     swipes = InMemorySwipeRepo()
     matches = InMemoryMatchRepo()
+    
+    # Dev match seed removed.
+    # Matches will be created dynamically via swipes.
+
     return InMemoryUnitOfWork(seekers, hosts, listings, swipes, matches)
 
 
