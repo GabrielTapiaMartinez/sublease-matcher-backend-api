@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal
+from typing import List, Literal
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict
@@ -258,41 +258,42 @@ def undo_swipe(
     return UndoResponse(restored=_to_swipe_out(restored) if restored else None)
 
 
-def _compute_matches(request: Request, uow: InMemoryUnitOfWork) -> List[MatchOut]:
-    header_user = request.headers.get("X-Debug-User-Id")
-    candidate_users: List[str] = []
-    if header_user:
-        candidate_users.append(header_user)
-    else:
-        candidate_users.extend(["user-1", "user-10"])
+def _compute_matches(user_id: str, uow: InMemoryUnitOfWork) -> List[MatchOut]:
+    seeker = uow.seekers.get_by_user(user_id)
+    matches: List[MatchDict] = []
+    
+    # Check if user is a seeker
+    if seeker and seeker.get("id"):
+        matches.extend(uow.matches.list_for_seeker(seeker["id"]))
 
-    for user_id in candidate_users:
-        seeker = uow.seekers.get_by_user(user_id)
-        if seeker and seeker.get("id"):
-            matches = uow.matches.list_for_seeker(seeker["id"])
-            return [_to_match_out(match) for match in matches]
-
-        host = uow.hosts.get_by_user(user_id)
-        if host and host.get("id"):
-            listing = uow.listings.get_by_host(host["id"])
-            matches = uow.matches.list_for_host(host["id"])
-            if listing and listing.get("id"):
-                matches = [match for match in matches if match.get("listing_id") == listing["id"]]
-            return [_to_match_out(match) for match in matches]
-    raise NotFoundError("No seeker or host context found for user")
+    # Check if user is a host
+    host = uow.hosts.get_by_user(user_id)
+    if host and host.get("id"):
+        listing = uow.listings.get_by_host(host["id"])
+        # Only return matches for the current listing? Or all host matches?
+        # Use existing logic: list_for_host returns matches for all listings of that host (implied by host_id)
+        host_matches = uow.matches.list_for_host(host["id"])
+        matches.extend(host_matches)
+    
+    # If no matches found but profiles exist, return empty list instead of error
+    # The original error "No seeker or host context found" implies the user has NO profile at all.
+    # We should return empty list if profiles exist but no matches.
+    # If NO profile exists, empty list is also probably better than error for "my matches".
+    
+    return [_to_match_out(match) for match in matches]
 
 
 @router.get("/matches/me", response_model=list[MatchOut])
 def my_matches(
-    request: Request,
     uow: InMemoryUnitOfWork = Depends(get_uow),
+    user_id: str = Depends(get_current_user_id),
 ) -> list[MatchOut]:
-    return _compute_matches(request, uow)
+    return _compute_matches(user_id, uow)
 
 
 @public_router.get("/matches", response_model=list[MatchOut])
 def matches_alias(
-    request: Request,
     uow: InMemoryUnitOfWork = Depends(get_uow),
+    user_id: str = Depends(get_current_user_id),
 ) -> list[MatchOut]:
-    return _compute_matches(request, uow)
+    return _compute_matches(user_id, uow)
