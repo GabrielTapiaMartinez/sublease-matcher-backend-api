@@ -70,6 +70,7 @@ class SqlAlchemySeekerRepo(SeekerRepo):
             "city": seeker.city,
             "interests_csv": seeker.interests_csv or "",
             "contact_email": seeker.contact_email,
+            "major": seeker.major,
             "hidden": not bool(seeker.visible),
             "photos": photos,
         }
@@ -104,6 +105,7 @@ class SqlAlchemySeekerRepo(SeekerRepo):
             "budget_max",
             "city",
             "contact_email",
+            "major",
         ):
             if field in seeker:
                 setattr(db_obj, field, seeker.get(field))

@@ -134,7 +134,9 @@ class SeekerProfile(Base):
     interests_csv: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     contact_email: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     available_from: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
+    available_from: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
     available_to: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
+    major: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
 
     user: Mapped[User] = relationship("User", back_populates="seeker_profile")
     photos: Mapped[list[SeekerPhoto]] = relationship(
