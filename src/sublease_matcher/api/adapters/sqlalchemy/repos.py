@@ -209,16 +209,15 @@ class SqlAlchemyListingRepo(ListingRepo):
                 "id": roommate.id,
                 "name": roommate.name,
                 "sleepingHabits": roommate.sleeping_habits,
-                "sleeping_habits": roommate.sleeping_habits,
                 "interests": _list_from_csv(roommate.interests_csv),
                 "interests_csv": roommate.interests_csv,
                 "photo_url": roommate.photo_url,
                 "pronouns": roommate.pronouns,
                 "gender": roommate.gender,
                 "studyHabits": roommate.study_habits,
-                "study_habits": roommate.study_habits,
                 "cleanliness": roommate.cleanliness,
                 "bio": roommate.bio,
+                "major": roommate.major,
             }
             for roommate in listing.roommates
         ]
@@ -278,6 +277,7 @@ class SqlAlchemyListingRepo(ListingRepo):
                         study_habits=roommate.get("studyHabits") or roommate.get("study_habits"),
                         cleanliness=roommate.get("cleanliness"),
                         bio=roommate.get("bio"),
+                        major=roommate.get("major"),
                     )
                 )
         if "photos" in listing:

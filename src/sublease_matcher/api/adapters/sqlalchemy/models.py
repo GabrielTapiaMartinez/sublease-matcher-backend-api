@@ -294,6 +294,7 @@ class ListingRoommate(Base):
     study_habits: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     cleanliness: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     bio: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    major: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
 
     listing: Mapped[Listing] = relationship("Listing", back_populates="roommates")
 
