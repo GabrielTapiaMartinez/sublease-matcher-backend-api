@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Literal
+from typing import List, Literal, Union
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict
@@ -80,6 +80,7 @@ class MatchOut(BaseModel):
     status: Literal["PENDING", "MUTUAL"]
     score: float | None = None
     matched_at: datetime | None = None
+    target_profile: Union[ListingQueueItem, SeekerQueueItem, None] = None
 
 
 def _has_like(swipes: InMemorySwipeRepo, *, user_id: str, target_id: str) -> bool:
@@ -130,7 +131,7 @@ def _to_swipe_out(swipe: SwipeDict) -> SwipeOut:
     )
 
 
-def _to_match_out(match: MatchDict) -> MatchOut:
+def _to_match_out(match: MatchDict, target_profile: Union[ListingQueueItem, SeekerQueueItem, None] = None) -> MatchOut:
     status = match["status"]
     return MatchOut(
         id=match["id"],
@@ -139,6 +140,7 @@ def _to_match_out(match: MatchDict) -> MatchOut:
         status=status,
         score=match.get("score"),
         matched_at=match.get("matched_at"),
+        target_profile=target_profile,
     )
 
 
@@ -275,7 +277,24 @@ def _compute_matches(user_id: str, uow: InMemoryUnitOfWork) -> List[MatchOut]:
     # We should return empty list if profiles exist but no matches.
     # If NO profile exists, empty list is also probably better than error for "my matches".
     
-    return [_to_match_out(match) for match in matches]
+    results: List[MatchOut] = []
+    
+    for match in matches:
+        target_profile = None
+        if seeker and seeker.get("id"):
+            # User is Seeker, target is Listing
+            listing = uow.listings.get(match["listing_id"])
+            if listing:
+                target_profile = _to_listing_queue_item(listing)
+        elif host and host.get("id"):
+            # User is Host, target is Seeker
+            match_seeker = uow.seekers.get(match["seeker_id"])
+            if match_seeker:
+                target_profile = _to_seeker_queue_item(match_seeker)
+        
+        results.append(_to_match_out(match, target_profile))
+
+    return results
 
 
 @router.get("/matches/me", response_model=list[MatchOut])
