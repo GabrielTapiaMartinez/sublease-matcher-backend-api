@@ -83,13 +83,8 @@ class MatchOut(BaseModel):
 
 
 def _has_like(swipes: InMemorySwipeRepo, *, user_id: str, target_id: str) -> bool:
-    store: dict[str, SwipeDict] = swipes._data
-    return any(
-        swipe.get("user_id") == user_id
-        and swipe.get("target_id") == target_id
-        and swipe.get("decision") == "like"
-        for swipe in store.values()
-    )
+    swipe = swipes.get_swipe(user_id, target_id)
+    return swipe is not None and swipe.get("decision") == "like"
 
 
 def _to_listing_queue_item(listing: ListingDict) -> ListingQueueItem:

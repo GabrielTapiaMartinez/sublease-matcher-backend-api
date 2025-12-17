@@ -123,6 +123,12 @@ class InMemorySwipeRepo(SwipeRepo):
         self._by_user_stack.setdefault(swiper_id, []).append(swipe)
         return swipe
 
+    def get_swipe(self, user_id: str, target_id: str) -> SwipeDict | None:
+        for swipe in self._data.values():
+            if swipe.get("user_id") == user_id and swipe.get("target_id") == target_id:
+                return swipe
+        return None
+
     def undo_last(self, user_id: str) -> SwipeDict | None:
         history = self._by_user_stack.get(user_id) or []
         if not history:
