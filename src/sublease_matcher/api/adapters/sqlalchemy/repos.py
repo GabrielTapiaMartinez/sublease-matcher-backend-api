@@ -204,6 +204,7 @@ class SqlAlchemyListingRepo(ListingRepo):
             "available_from": listing.available_from,
             "available_to": listing.available_to,
             "status": status_value,
+            "bio": listing.host.bio if listing.host else None,
             "photos": photos,
         }
         data["roommates"] = [

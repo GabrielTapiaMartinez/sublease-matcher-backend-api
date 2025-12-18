@@ -36,6 +36,13 @@ class SwipeIn(BaseModel):
     )
 
 
+class Roommate(BaseModel):
+    id: str | None = None
+    name: str | None = None
+    major: str | None = None
+    interests: list[str] = []
+    bio: str | None = None
+
 
 class ListingQueueItem(BaseModel):
     id: str
@@ -46,7 +53,9 @@ class ListingQueueItem(BaseModel):
     status: Literal["DRAFT", "PUBLISHED", "UNLISTED"] | None = None
     availableFrom: str | None = None
     availableTo: str | None = None
+    bio: str | None = None
     photos: list[str] = []
+    roommates: list[Roommate] = []
 
 
 class SeekerQueueItem(BaseModel):
@@ -58,6 +67,7 @@ class SeekerQueueItem(BaseModel):
     city: str | None = None
     available_from: str | None = None
     available_to: str | None = None
+    major: str | None = None
     photos: list[str] = []
 
 
@@ -100,7 +110,18 @@ def _to_listing_queue_item(listing: ListingDict) -> ListingQueueItem:
         status=listing.get("status"),
         availableFrom=str(available_from) if available_from else None,
         availableTo=str(available_to) if available_to else None,
+        bio=listing.get("bio"),
         photos=listing.get("photos", []),
+        roommates=[
+            Roommate(
+                id=r.get("id"),
+                name=r.get("name"),
+                major=r.get("major"),
+                interests=r.get("interests", []),
+                bio=r.get("bio"),
+            )
+            for r in listing.get("roommates", [])
+        ]
     )
 
 
@@ -116,6 +137,7 @@ def _to_seeker_queue_item(seeker: SeekerDict) -> SeekerQueueItem:
         city=seeker.get("city"),
         available_from=str(available_from) if available_from else None,
         available_to=str(available_to) if available_to else None,
+        major=seeker.get("major"),
         photos=seeker.get("photos", []),
     )
 

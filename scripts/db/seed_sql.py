@@ -92,11 +92,14 @@ def _seed_seekers(uow: SqlAlchemyUnitOfWork) -> None:
         payload = dict(row["profile"])
         record = uow.seekers.upsert(payload)
         seeker_id = record["id"]
+        # Manually add photos since upsert logic might be simple or specific
+        uow.session.flush()
         seeker_model = uow.session.get(models.SeekerProfile, seeker_id)
         if seeker_model:
-            seeker_model.need_from = row["need_from"]
-            seeker_model.need_to = row["need_to"]
             seeker_model.visible = True
+            
+        # Clear existing photos to avoid dupes if re-seeding without truncate
+        # (Though we truncate tables above)
         for photo in row["photos"]:
             uow.session.add(
                 models.SeekerPhoto(
@@ -133,17 +136,13 @@ def _seed_hosts_and_listings(uow: SqlAlchemyUnitOfWork) -> None:
 
 def _seed_swipes_and_matches(uow: SqlAlchemyUnitOfWork) -> None:
     _log("Loading swipes and matches...")
-    uow.session.add_all([])
+    # Create a mutual match between seeker-1 and listing-1
     # uow.matches.upsert(
-    #     seeker_id="seeker-1",
-    #     listing_id="listing-1",
-    #     status="MUTUAL",
-    #     score=0.95,
+    #    seeker_id="seeker-1",
+    #    listing_id="listing-1",
+    #    status="MUTUAL",
+    #    score=0.95,
     # )
-    # match_id = "seeker-1:listing-1"
-    # match = uow.session.get(models.Match, match_id)
-    # if match:
-    #     match.matched_at = swipe_timestamp
 
 
 def main() -> None:
