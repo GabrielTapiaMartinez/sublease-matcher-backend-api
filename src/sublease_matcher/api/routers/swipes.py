@@ -43,6 +43,9 @@ class Roommate(BaseModel):
     interests: list[str] = []
     bio: str | None = None
     photo_url: str | None = None
+    sleepingHabits: str | None = None
+    gender: str | None = None
+    pronouns: str | None = None
 
 
 class ListingQueueItem(BaseModel):
@@ -124,6 +127,9 @@ def _to_listing_queue_item(listing: ListingDict) -> ListingQueueItem:
                 interests=r.get("interests", []),
                 bio=r.get("bio"),
                 photo_url=r.get("photo_url"),
+                sleepingHabits=r.get("sleepingHabits"),
+                gender=r.get("gender"),
+                pronouns=r.get("pronouns"),
             )
             for r in listing.get("roommates", [])
         ]
