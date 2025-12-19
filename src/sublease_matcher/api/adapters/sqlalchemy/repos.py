@@ -69,6 +69,7 @@ class SqlAlchemySeekerRepo(SeekerRepo):
             "budget_max": seeker.budget_max,
             "city": seeker.city,
             "interests_csv": seeker.interests_csv or "",
+            "interests": _list_from_csv(seeker.interests_csv),
             "contact_email": seeker.contact_email,
             "major": seeker.major,
             "hidden": not bool(seeker.visible),

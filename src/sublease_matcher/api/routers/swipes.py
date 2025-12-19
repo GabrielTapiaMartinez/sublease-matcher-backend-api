@@ -54,6 +54,7 @@ class ListingQueueItem(BaseModel):
     availableFrom: str | None = None
     availableTo: str | None = None
     bio: str | None = None
+    interests: list[str] = []
     photos: list[str] = []
     roommates: list[Roommate] = []
 
@@ -68,6 +69,7 @@ class SeekerQueueItem(BaseModel):
     available_from: str | None = None
     available_to: str | None = None
     major: str | None = None
+    interests: list[str] = []
     photos: list[str] = []
 
 
@@ -111,6 +113,7 @@ def _to_listing_queue_item(listing: ListingDict) -> ListingQueueItem:
         availableFrom=str(available_from) if available_from else None,
         availableTo=str(available_to) if available_to else None,
         bio=listing.get("bio"),
+        interests=listing.get("interests", []),
         photos=listing.get("photos", []),
         roommates=[
             Roommate(
@@ -138,6 +141,7 @@ def _to_seeker_queue_item(seeker: SeekerDict) -> SeekerQueueItem:
         available_from=str(available_from) if available_from else None,
         available_to=str(available_to) if available_to else None,
         major=seeker.get("major"),
+        interests=seeker.get("interests", []),
         photos=seeker.get("photos", []),
     )
 
