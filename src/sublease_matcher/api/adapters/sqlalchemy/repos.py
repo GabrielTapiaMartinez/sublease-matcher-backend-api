@@ -69,7 +69,9 @@ class SqlAlchemySeekerRepo(SeekerRepo):
             "budget_max": seeker.budget_max,
             "city": seeker.city,
             "interests_csv": seeker.interests_csv or "",
+            "interests": _list_from_csv(seeker.interests_csv),
             "contact_email": seeker.contact_email,
+            "major": seeker.major,
             "hidden": not bool(seeker.visible),
             "photos": photos,
         }
@@ -104,6 +106,7 @@ class SqlAlchemySeekerRepo(SeekerRepo):
             "budget_max",
             "city",
             "contact_email",
+            "major",
         ):
             if field in seeker:
                 setattr(db_obj, field, seeker.get(field))
@@ -202,6 +205,7 @@ class SqlAlchemyListingRepo(ListingRepo):
             "available_from": listing.available_from,
             "available_to": listing.available_to,
             "status": status_value,
+            "bio": listing.host.bio if listing.host else None,
             "photos": photos,
         }
         data["roommates"] = [
@@ -209,16 +213,15 @@ class SqlAlchemyListingRepo(ListingRepo):
                 "id": roommate.id,
                 "name": roommate.name,
                 "sleepingHabits": roommate.sleeping_habits,
-                "sleeping_habits": roommate.sleeping_habits,
                 "interests": _list_from_csv(roommate.interests_csv),
                 "interests_csv": roommate.interests_csv,
                 "photo_url": roommate.photo_url,
                 "pronouns": roommate.pronouns,
                 "gender": roommate.gender,
                 "studyHabits": roommate.study_habits,
-                "study_habits": roommate.study_habits,
                 "cleanliness": roommate.cleanliness,
                 "bio": roommate.bio,
+                "major": roommate.major,
             }
             for roommate in listing.roommates
         ]
@@ -278,6 +281,7 @@ class SqlAlchemyListingRepo(ListingRepo):
                         study_habits=roommate.get("studyHabits") or roommate.get("study_habits"),
                         cleanliness=roommate.get("cleanliness"),
                         bio=roommate.get("bio"),
+                        major=roommate.get("major"),
                     )
                 )
         if "photos" in listing:
@@ -363,25 +367,39 @@ class SqlAlchemyMatchRepo(MatchRepo):
         status: str,
         score: float | None,
     ) -> MatchDict:
-        match_id = f"{seeker_id}:{listing_id}"
-        db_obj = self.session.get(models.Match, match_id)
+        # Look up by unique constraint (seeker_id, listing_id) instead of constructing a composite ID
+        stmt = select(models.Match).where(
+            models.Match.seeker_id == seeker_id,
+            models.Match.listing_id == listing_id
+        )
+        db_obj = self.session.scalars(stmt).first()
+        
         normalized_status_value = status.upper()
         if normalized_status_value not in {"PENDING", "MUTUAL"}:
             raise ValueError("status must be PENDING or MUTUAL")
         normalized_status = cast(Literal["PENDING", "MUTUAL"], normalized_status_value)
+        
         if db_obj is None:
+            # For new objects, use a UUID for the ID to avoid length limits
             db_obj = models.Match(
-                id=match_id,
+                id=str(uuid4()),
                 seeker_id=seeker_id,
                 listing_id=listing_id,
                 status=normalized_status,
+                matched_at=datetime.utcnow() if normalized_status == "MUTUAL" else None
             )
             self.session.add(db_obj)
-        db_obj.status = normalized_status
+        else:
+            # For updates, we assign the string directly.
+            db_obj.status = normalized_status
+            if normalized_status == "MUTUAL" and not db_obj.matched_at:
+                db_obj.matched_at = datetime.utcnow()
+                
         if score is None:
             db_obj.score = None
         else:
             db_obj.score = Decimal(str(score))
+        
         self.session.flush()
         return self._to_dict(db_obj)
 
@@ -514,6 +532,45 @@ class SqlAlchemySwipeRepo(SwipeRepo):
                 created_at=host_swipe.created_at or now,
             )
         raise ValueError("target_id must reference a listing or seeker")
+
+    def get_swipe(self, user_id: str, target_id: str) -> SwipeDict | None:
+        if target_id.startswith("listing-"):
+            seeker = self._seeker_for_user(user_id)
+            if not seeker:
+                return None
+            stmt = select(models.SeekerSwipe).where(
+                models.SeekerSwipe.seeker_id == seeker.id,
+                models.SeekerSwipe.listing_id == target_id # target_id is listing id
+            )
+            swipe = self.session.scalars(stmt).first()
+            if not swipe:
+                return None
+            return self._format_swipe(
+                swipe_id=swipe.id,
+                user_id=user_id,
+                target_id=target_id,
+                decision=swipe.decision,
+                created_at=swipe.created_at or datetime.utcnow(),
+            )
+        elif target_id.startswith("seeker-"):
+            host = self._host_for_user(user_id)
+            if not host:
+                return None
+            stmt = select(models.HostSwipe).where(
+                models.HostSwipe.host_id == host.id,
+                models.HostSwipe.seeker_id == target_id # target_id is seeker id
+            )
+            swipe = self.session.scalars(stmt).first()
+            if not swipe:
+                return None
+            return self._format_swipe(
+                swipe_id=swipe.id,
+                user_id=user_id,
+                target_id=target_id,
+                decision=swipe.decision,
+                created_at=swipe.created_at or datetime.utcnow(),
+            )
+        return None
 
     def undo_last(self, user_id: str) -> SwipeDict | None:
         seeker = self._seeker_for_user(user_id)

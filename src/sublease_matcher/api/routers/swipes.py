@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal
+from typing import List, Literal, Union
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict
@@ -36,6 +36,14 @@ class SwipeIn(BaseModel):
     )
 
 
+class Roommate(BaseModel):
+    id: str | None = None
+    name: str | None = None
+    major: str | None = None
+    interests: list[str] = []
+    bio: str | None = None
+    photo_url: str | None = None
+
 
 class ListingQueueItem(BaseModel):
     id: str
@@ -46,7 +54,10 @@ class ListingQueueItem(BaseModel):
     status: Literal["DRAFT", "PUBLISHED", "UNLISTED"] | None = None
     availableFrom: str | None = None
     availableTo: str | None = None
+    bio: str | None = None
+    interests: list[str] = []
     photos: list[str] = []
+    roommates: list[Roommate] = []
 
 
 class SeekerQueueItem(BaseModel):
@@ -58,6 +69,8 @@ class SeekerQueueItem(BaseModel):
     city: str | None = None
     available_from: str | None = None
     available_to: str | None = None
+    major: str | None = None
+    interests: list[str] = []
     photos: list[str] = []
 
 
@@ -80,16 +93,12 @@ class MatchOut(BaseModel):
     status: Literal["PENDING", "MUTUAL"]
     score: float | None = None
     matched_at: datetime | None = None
+    target_profile: Union[ListingQueueItem, SeekerQueueItem, None] = None
 
 
 def _has_like(swipes: InMemorySwipeRepo, *, user_id: str, target_id: str) -> bool:
-    store: dict[str, SwipeDict] = swipes._data
-    return any(
-        swipe.get("user_id") == user_id
-        and swipe.get("target_id") == target_id
-        and swipe.get("decision") == "like"
-        for swipe in store.values()
-    )
+    swipe = swipes.get_swipe(user_id, target_id)
+    return swipe is not None and swipe.get("decision") == "like"
 
 
 def _to_listing_queue_item(listing: ListingDict) -> ListingQueueItem:
@@ -104,7 +113,20 @@ def _to_listing_queue_item(listing: ListingDict) -> ListingQueueItem:
         status=listing.get("status"),
         availableFrom=str(available_from) if available_from else None,
         availableTo=str(available_to) if available_to else None,
+        bio=listing.get("bio"),
+        interests=listing.get("interests", []),
         photos=listing.get("photos", []),
+        roommates=[
+            Roommate(
+                id=r.get("id"),
+                name=r.get("name"),
+                major=r.get("major"),
+                interests=r.get("interests", []),
+                bio=r.get("bio"),
+                photo_url=r.get("photo_url"),
+            )
+            for r in listing.get("roommates", [])
+        ]
     )
 
 
@@ -120,6 +142,8 @@ def _to_seeker_queue_item(seeker: SeekerDict) -> SeekerQueueItem:
         city=seeker.get("city"),
         available_from=str(available_from) if available_from else None,
         available_to=str(available_to) if available_to else None,
+        major=seeker.get("major"),
+        interests=seeker.get("interests", []),
         photos=seeker.get("photos", []),
     )
 
@@ -135,7 +159,7 @@ def _to_swipe_out(swipe: SwipeDict) -> SwipeOut:
     )
 
 
-def _to_match_out(match: MatchDict) -> MatchOut:
+def _to_match_out(match: MatchDict, target_profile: Union[ListingQueueItem, SeekerQueueItem, None] = None) -> MatchOut:
     status = match["status"]
     return MatchOut(
         id=match["id"],
@@ -144,6 +168,7 @@ def _to_match_out(match: MatchDict) -> MatchOut:
         status=status,
         score=match.get("score"),
         matched_at=match.get("matched_at"),
+        target_profile=target_profile,
     )
 
 
@@ -258,41 +283,59 @@ def undo_swipe(
     return UndoResponse(restored=_to_swipe_out(restored) if restored else None)
 
 
-def _compute_matches(request: Request, uow: InMemoryUnitOfWork) -> List[MatchOut]:
-    header_user = request.headers.get("X-Debug-User-Id")
-    candidate_users: List[str] = []
-    if header_user:
-        candidate_users.append(header_user)
-    else:
-        candidate_users.extend(["user-1", "user-10"])
+def _compute_matches(user_id: str, uow: InMemoryUnitOfWork) -> List[MatchOut]:
+    seeker = uow.seekers.get_by_user(user_id)
+    matches: List[MatchDict] = []
+    
+    # Check if user is a seeker
+    if seeker and seeker.get("id"):
+        matches.extend(uow.matches.list_for_seeker(seeker["id"]))
 
-    for user_id in candidate_users:
-        seeker = uow.seekers.get_by_user(user_id)
+    # Check if user is a host
+    host = uow.hosts.get_by_user(user_id)
+    if host and host.get("id"):
+        listing = uow.listings.get_by_host(host["id"])
+        # Only return matches for the current listing? Or all host matches?
+        # Use existing logic: list_for_host returns matches for all listings of that host (implied by host_id)
+        host_matches = uow.matches.list_for_host(host["id"])
+        matches.extend(host_matches)
+    
+    # If no matches found but profiles exist, return empty list instead of error
+    # The original error "No seeker or host context found" implies the user has NO profile at all.
+    # We should return empty list if profiles exist but no matches.
+    # If NO profile exists, empty list is also probably better than error for "my matches".
+    
+    results: List[MatchOut] = []
+    
+    for match in matches:
+        target_profile = None
         if seeker and seeker.get("id"):
-            matches = uow.matches.list_for_seeker(seeker["id"])
-            return [_to_match_out(match) for match in matches]
+            # User is Seeker, target is Listing
+            listing = uow.listings.get(match["listing_id"])
+            if listing:
+                target_profile = _to_listing_queue_item(listing)
+        elif host and host.get("id"):
+            # User is Host, target is Seeker
+            match_seeker = uow.seekers.get(match["seeker_id"])
+            if match_seeker:
+                target_profile = _to_seeker_queue_item(match_seeker)
+        
+        results.append(_to_match_out(match, target_profile))
 
-        host = uow.hosts.get_by_user(user_id)
-        if host and host.get("id"):
-            listing = uow.listings.get_by_host(host["id"])
-            matches = uow.matches.list_for_host(host["id"])
-            if listing and listing.get("id"):
-                matches = [match for match in matches if match.get("listing_id") == listing["id"]]
-            return [_to_match_out(match) for match in matches]
-    raise NotFoundError("No seeker or host context found for user")
+    return results
 
 
 @router.get("/matches/me", response_model=list[MatchOut])
 def my_matches(
-    request: Request,
     uow: InMemoryUnitOfWork = Depends(get_uow),
+    user_id: str = Depends(get_current_user_id),
 ) -> list[MatchOut]:
-    return _compute_matches(request, uow)
+    return _compute_matches(user_id, uow)
 
 
 @public_router.get("/matches", response_model=list[MatchOut])
 def matches_alias(
-    request: Request,
     uow: InMemoryUnitOfWork = Depends(get_uow),
+    user_id: str = Depends(get_current_user_id),
 ) -> list[MatchOut]:
-    return _compute_matches(request, uow)
+    return _compute_matches(user_id, uow)

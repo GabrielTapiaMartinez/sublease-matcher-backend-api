@@ -76,29 +76,7 @@ def _truncate_tables(session: Session) -> None:
 
 def _seed_users(uow: SqlAlchemyUnitOfWork) -> None:
     _log("Loading users...")
-    user_rows: list[dict[str, Any]] = [
-        {
-            "id": "user-1",
-            "email": "jamie.rivera@example.edu",
-            "first_name": "Jamie",
-            "last_name": "Rivera",
-            "role": "SEEKER",
-        },
-        {
-            "id": "user-2",
-            "email": "parker.lee@example.edu",
-            "first_name": "Parker",
-            "last_name": "Lee",
-            "role": "SEEKER",
-        },
-        {
-            "id": "user-10",
-            "email": "casey.nguyen@example.edu",
-            "first_name": "Casey",
-            "last_name": "Nguyen",
-            "role": "HOST",
-        },
-    ]
+    user_rows: list[dict[str, Any]] = []
     for row in user_rows:
         role_value = row.get("role")
         user = uow.users.ensure_user(str(row["id"]), role=str(role_value) if role_value else None)
@@ -109,70 +87,19 @@ def _seed_users(uow: SqlAlchemyUnitOfWork) -> None:
 
 def _seed_seekers(uow: SqlAlchemyUnitOfWork) -> None:
     _log("Loading seekers, photos, and needs...")
-    seeker_rows: list[dict[str, Any]] = [
-        {
-            "profile": {
-                "id": "seeker-1",
-                "user_id": "user-9",
-                "bio": "Sophomore looking for quiet place",
-                "term": "Fall",
-                "term_year": 2025,
-                "budget_min": Decimal("400"),
-                "budget_max": Decimal("700"),
-                "city": "Eau Claire",
-                "interests_csv": "coding,swimming,reading",
-                "contact_email": "s1@example.edu",
-                "hidden": False,
-            },
-            "need_from": date(2025, 8, 1),
-            "need_to": date(2025, 12, 31),
-            "photos": [
-                {
-                    "id": "seeker-photo-1",
-                    "position": 1,
-                    "url": "/static/mock/seekers/seeker-1-1.jpg",
-                },
-                {
-                    "id": "seeker-photo-2",
-                    "position": 2,
-                    "url": "/static/mock/seekers/seeker-1-2.jpg",
-                },
-            ],
-        },
-        {
-            "profile": {
-                "id": "seeker-2",
-                "user_id": "user-2",
-                "bio": "Exchange student hunting for spring housing",
-                "term": "Spring",
-                "term_year": 2026,
-                "budget_min": Decimal("500"),
-                "budget_max": Decimal("800"),
-                "city": "Eau Claire",
-                "interests_csv": "hiking,cinema",
-                "contact_email": "s2@example.edu",
-                "hidden": False,
-            },
-            "need_from": date(2026, 1, 5),
-            "need_to": date(2026, 5, 20),
-            "photos": [
-                {
-                    "id": "seeker-photo-3",
-                    "position": 1,
-                    "url": "/static/mock/seekers/seeker-2-1.jpg",
-                }
-            ],
-        },
-    ]
+    seeker_rows: list[dict[str, Any]] = []
     for row in seeker_rows:
         payload = dict(row["profile"])
         record = uow.seekers.upsert(payload)
         seeker_id = record["id"]
+        # Manually add photos since upsert logic might be simple or specific
+        uow.session.flush()
         seeker_model = uow.session.get(models.SeekerProfile, seeker_id)
         if seeker_model:
-            seeker_model.need_from = row["need_from"]
-            seeker_model.need_to = row["need_to"]
             seeker_model.visible = True
+            
+        # Clear existing photos to avoid dupes if re-seeding without truncate
+        # (Though we truncate tables above)
         for photo in row["photos"]:
             uow.session.add(
                 models.SeekerPhoto(
@@ -186,53 +113,11 @@ def _seed_seekers(uow: SqlAlchemyUnitOfWork) -> None:
 
 def _seed_hosts_and_listings(uow: SqlAlchemyUnitOfWork) -> None:
     _log("Loading hosts, listings, photos, and roommates...")
-    host_rows: list[dict[str, Any]] = [
-        {
-            "id": "host-1",
-            "user_id": "user-10",
-            "bio": "2BR apartment close to campus",
-            "house_rules": "No smoking after 10pm",
-            "contact_email": "h1@example.edu",
-        }
-    ]
+    host_rows: list[dict[str, Any]] = []
     for host in host_rows:
         uow.hosts.upsert(dict(host))
 
-    listing_rows: list[dict[str, Any]] = [
-        {
-            "data": {
-                "id": "listing-1",
-                "host_id": "host-1",
-                "title": "Room near Water St",
-                "price_per_month": Decimal("650"),
-                "city": "Eau Claire",
-                "state": "WI",
-                "available_from": date(2025, 8, 15),
-                "available_to": date(2026, 5, 31),
-                "status": "PUBLISHED",
-                "roommates": [
-                    {
-                        "id": "roommate-1",
-                        "name": "Alex",
-                        "pronouns": "they/them",
-                        "sleepingHabits": "early sleeper",
-                        "studyHabits": "library focused",
-                        "cleanliness": "tidy",
-                        "interests": ["cooking", "hiking"],
-                        "bio": "Graduate assistant who enjoys morning runs.",
-                        "photo_url": "/static/mock/roommates/roommate-1.jpg",
-                    }
-                ],
-            },
-            "photos": [
-                {
-                    "id": "listing-photo-1",
-                    "position": 1,
-                    "url": "/static/mock/listings/listing-1-1.jpg",
-                }
-            ],
-        }
-    ]
+    listing_rows: list[dict[str, Any]] = []
 
     for listing in listing_rows:
         payload = dict(listing["data"])
@@ -251,35 +136,13 @@ def _seed_hosts_and_listings(uow: SqlAlchemyUnitOfWork) -> None:
 
 def _seed_swipes_and_matches(uow: SqlAlchemyUnitOfWork) -> None:
     _log("Loading swipes and matches...")
-    swipe_timestamp = datetime(2025, 7, 1, 12, 0, tzinfo=UTC)
-    uow.session.add_all(
-        [
-            models.SeekerSwipe(
-                id="seeker-swipe-1",
-                seeker_id="seeker-1",
-                listing_id="listing-1",
-                decision="LIKE",
-                created_at=swipe_timestamp,
-            ),
-            models.HostSwipe(
-                id="host-swipe-1",
-                host_id="host-1",
-                seeker_id="seeker-1",
-                decision="LIKE",
-                created_at=swipe_timestamp,
-            ),
-        ]
-    )
-    uow.matches.upsert(
-        seeker_id="seeker-1",
-        listing_id="listing-1",
-        status="MUTUAL",
-        score=0.95,
-    )
-    match_id = "seeker-1:listing-1"
-    match = uow.session.get(models.Match, match_id)
-    if match:
-        match.matched_at = swipe_timestamp
+    # Create a mutual match between seeker-1 and listing-1
+    # uow.matches.upsert(
+    #    seeker_id="seeker-1",
+    #    listing_id="listing-1",
+    #    status="MUTUAL",
+    #    score=0.95,
+    # )
 
 
 def main() -> None:

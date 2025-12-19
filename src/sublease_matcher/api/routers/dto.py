@@ -25,6 +25,7 @@ class SeekerProfileDTO(BaseModel):
     interests: list[str] = Field(default_factory=list)
     photos: list[str] = Field(default_factory=list)
     contactEmail: str | None = None
+    major: str | None = None
     hidden: bool | None = None
 
     model_config = ConfigDict(
@@ -63,6 +64,7 @@ class SeekerProfileDTO(BaseModel):
             "interests_csv": interests_csv if interests_csv else "",
             "photos": self.photos,
             "contact_email": self.contactEmail,
+            "major": self.major,
         }
         if self.hidden is not None:
             data["hidden"] = self.hidden
@@ -84,6 +86,7 @@ class SeekerProfileDTO(BaseModel):
             interests=interests,
             photos=data.get("photos", []),
             contactEmail=data.get("contact_email"),
+            major=data.get("major"),
             hidden=data.get("hidden"),
         )
 
@@ -97,6 +100,8 @@ class RoommateDTO(BaseModel):
     cleanliness: str | None = None
     interests: list[str] = Field(default_factory=list)
     bio: str | None = None
+    major: str | None = None
+    photo_url: str | None = None
 
     model_config = ConfigDict(
         json_schema_extra={

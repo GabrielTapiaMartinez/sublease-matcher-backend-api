@@ -135,6 +135,7 @@ class SeekerProfile(Base):
     contact_email: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     available_from: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
     available_to: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
+    major: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
 
     user: Mapped[User] = relationship("User", back_populates="seeker_profile")
     photos: Mapped[list[SeekerPhoto]] = relationship(
@@ -294,6 +295,7 @@ class ListingRoommate(Base):
     study_habits: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     cleanliness: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     bio: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    major: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
 
     listing: Mapped[Listing] = relationship("Listing", back_populates="roommates")
 

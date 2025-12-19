@@ -37,6 +37,7 @@ class ListingDict(TypedDict, total=False):
     available_from: date | None
     available_to: date | None
     status: Literal["DRAFT", "PUBLISHED", "UNLISTED"]
+    bio: str | None
     roommates: list[dict[str, Any]]
 
 
