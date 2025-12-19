@@ -42,6 +42,7 @@ class Roommate(BaseModel):
     major: str | None = None
     interests: list[str] = []
     bio: str | None = None
+    photo_url: str | None = None
 
 
 class ListingQueueItem(BaseModel):
@@ -122,6 +123,7 @@ def _to_listing_queue_item(listing: ListingDict) -> ListingQueueItem:
                 major=r.get("major"),
                 interests=r.get("interests", []),
                 bio=r.get("bio"),
+                photo_url=r.get("photo_url"),
             )
             for r in listing.get("roommates", [])
         ]
