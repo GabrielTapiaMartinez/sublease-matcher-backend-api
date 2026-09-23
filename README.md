@@ -106,3 +106,11 @@ make db-dev-smoke-sql
 - Prefer `make run-src` to avoid `PYTHONPATH` issues with the src layout.
 - If imports drift, reinstall with `make reinstall`.
 - To confirm packaging, run `make check-import`.
+
+## My Contribution
+
+This was a team project. Based on commit history, I authored roughly 42% of commits and 77% of line insertions in this repo.
+
+I built the SQLAlchemy adapters and SQL Unit of Work (`adapters/sqlalchemy/`), the ports/interfaces layer (`interfaces/`), and the in-memory adapters used for testing. I set up Alembic migrations end-to-end, including `alembic.ini`, `alembic/env.py`, and the initial schema and auth/session migrations. I also built out the FastAPI routers, the dependency injection setup, and the DB documentation under `docs/db/`.
+
+I also implemented a media-upload and auth-refactor feature (originally merged in PR #20), which was later reverted (PR #21) as the team continued iterating. It reflects work I did on the auth/upload layer, not something currently active in this codebase.
